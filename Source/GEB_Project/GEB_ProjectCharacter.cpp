@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "WeaponComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -58,6 +59,10 @@ void AGEB_ProjectCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	WeaponComp = FindComponentByClass<UWeaponComponent>();
+
+	if (!WeaponComp) UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"))
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -86,6 +91,12 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
+
+		// Shooting
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Shoot);
+
+		// Reload
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Reload);
 	}
 	else
 	{
@@ -127,4 +138,16 @@ void AGEB_ProjectCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void AGEB_ProjectCharacter::Shoot(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Shoot!"))
+	WeaponComp->Fire();
+}
+
+void AGEB_ProjectCharacter::Reload(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Reload!"))
+	WeaponComp->Reload();
 }
