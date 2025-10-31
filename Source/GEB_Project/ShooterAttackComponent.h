@@ -13,15 +13,18 @@ UCLASS()
 class GEB_PROJECT_API UShooterAttackComponent : public UAttackComponent
 {
 	GENERATED_BODY()
+public:
+	UShooterAttackComponent();
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	// 총구 위치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	USceneComponent* MuzzleLocation;
+	
 protected:
 	// **발사할 Projectile 클래스**를 에디터에서 설정할 수 있도록 합니다.
 	UPROPERTY(EditDefaultsOnly, Category = "Shooter Attack")
 	TSubclassOf<AEnemyProjectile> ProjectileClass;
-
-	// **Projectile이 생성될 위치** (보통 Enemy의 Mesh 소켓)
-	UPROPERTY(EditDefaultsOnly, Category = "Shooter Attack")
-	FName MuzzleSocketName;
 
 public:
 	// UAttackComponent의 핵심 함수를 오버라이드하여 발사 로직을 구현
