@@ -27,7 +27,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield", meta = (AllowPrivateAccess = "true"))
 	bool bIsShieldActive;
 
-public:	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield", meta = (AllowPrivateAccess = "true"))
+	UMaterialInterface* ShieldOverlayMaterial;
+
+	UMaterialInstanceDynamic* DynamicShieldMaterialInstance;
+	USkeletalMeshComponent* OwnerMesh;
+public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

@@ -23,6 +23,17 @@ void UShieldComponent::BeginPlay()
 	if(CurrentShield > 0)
 	{
 		bIsShieldActive = true;
+		OwnerMesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
+		if (OwnerMesh && ShieldOverlayMaterial)
+		{
+			// 머티리얼 다이내믹 인스턴스 생성 및 추가
+			DynamicShieldMaterialInstance = UMaterialInstanceDynamic::Create(ShieldOverlayMaterial, this);
+			if (DynamicShieldMaterialInstance)
+			{
+				OwnerMesh->SetOverlayMaterialMaxDrawDistance(1000.f);
+				OwnerMesh->SetOverlayMaterial(DynamicShieldMaterialInstance);			
+			}
+		}
 	}
 	else
 	{
@@ -53,6 +64,12 @@ int UShieldComponent::ApplyDamageToShield_Implementation(int damage)
 		{
 			CurrentShield = 0;
 			bIsShieldActive = false;
+			if (OwnerMesh && DynamicShieldMaterialInstance)
+			{
+				// 실드 머티리얼 제거 (기본 머티리얼로 복구)
+				OwnerMesh->SetOverlayMaterial(nullptr);
+				DynamicShieldMaterialInstance = nullptr;
+			}
 		}
 		return CurrentShield;
 	}
