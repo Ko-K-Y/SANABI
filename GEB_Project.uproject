@@ -7,7 +7,11 @@
 		{
 			"Name": "GEB_Project",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"AIModule"
+			]
 		}
 	],
 	"Plugins": [
@@ -19,7 +23,11 @@
 			]
 		},
 		{
-			"Name": "HDRIBackdrop",
+			"Name": "MotionWarping",
+			"Enabled": true
+		},
+		{
+			"Name": "DisasterRecoveryClient",
 			"Enabled": true
 		}
 	]
