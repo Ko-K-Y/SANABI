@@ -45,7 +45,7 @@ void AASavePointTrigger::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedCo
 	}
 
 	// 권한 체크: 서버에서만 세이브포인트 갱신 (싱글도 서버 권한임)
-	if (!HasAuthority())
+	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -59,9 +59,7 @@ void AASavePointTrigger::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedCo
 
 			if (bDebugLog)
 			{
-				UE_LOG(LogTemp, Log, TEXT("[SavePoint] Set at %s (Rot=%s)"),
-					*SaveXform.GetLocation().ToString(),
-					*SaveXform.GetRotation().Rotator().ToString());
+				UE_LOG(LogTemp, Log, TEXT("[SavePoint] Set at %s"), *SaveXform.GetLocation().ToString());
 			}
 
 			bAlreadyTriggered = true;

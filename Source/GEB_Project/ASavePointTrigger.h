@@ -41,7 +41,7 @@ private:
 	/** 이미 발동했는지 (중복 방지용) */
 	bool bAlreadyTriggered = false;
 
-	/** 디버그 메시지 표시 */
+	/** 디버그 메시지/그림 표시 */
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDebugLog = true;
 

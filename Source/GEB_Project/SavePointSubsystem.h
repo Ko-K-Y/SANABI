@@ -4,7 +4,7 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "SavePointSubsystem.generated.h"
 
-/** 현재 월드의 '세이브 포인트' Transform을 보관하는 아주 단순한 서브시스템 */
+/** 현재 월드의 '세이브 포인트'를 보관하는 매우 단순한 서브시스템 */
 UCLASS()
 class GEB_PROJECT_API USavePointSubsystem : public UWorldSubsystem
 {

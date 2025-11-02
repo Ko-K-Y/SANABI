@@ -2,15 +2,31 @@
 #include "SavePointSubsystem.h"
 
 #include "Engine/World.h"
-#include "EngineUtils.h"                 // TActorIterator
-#include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 #include "CollisionQueryParams.h"
 #include "DrawDebugHelpers.h"
 
 AMapGameMode::AMapGameMode()
 {
-	// 기본값은 UPROPERTY에서 설정
+	// 기본 설정은 필요시 조정
+}
+
+void AMapGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	// 보통 Super가 기본 스폰 로직을 수행
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+
+	// 첫 스폰에도 세이브 포인트를 적용하고 싶을 때만 수행
+	if (bUseSavePointForInitialSpawn && IsValid(NewPlayer))
+	{
+		FTransform SaveXform;
+		if (TryGetSaveSpawnTransform(SaveXform))
+		{
+			// 기본 스폰을 한 번 수행했더라도, 세이브 포인트가 있다면 해당 위치에서 다시 시작시킴
+			RestartPlayerAtTransform(NewPlayer, SaveXform);
+		}
+	}
 }
 
 void AMapGameMode::RestartPlayer(AController* NewPlayer)
@@ -24,28 +40,14 @@ void AMapGameMode::RestartPlayer(AController* NewPlayer)
 	FTransform SaveXform;
 	if (TryGetSaveSpawnTransform(SaveXform))
 	{
-		// 저장 위치에서 리스타트(엔진 한계 케이스를 대비해 PlayerStart도 옮겨둔다)
-		EnsureSaveStartAt(SaveXform);
+		// 세이브 포인트가 있으면 해당 위치에서 리스타트
 		RestartPlayerAtTransform(NewPlayer, SaveXform);
 	}
 	else
 	{
+		// 없으면 기존 규칙대로
 		Super::RestartPlayer(NewPlayer);
 	}
-}
-
-AActor* AMapGameMode::ChoosePlayerStart_Implementation(AController* Player)
-{
-	FTransform SaveXform;
-	if (TryGetSaveSpawnTransform(SaveXform))
-	{
-		// 엔진이 스폰 위치를 고르는 '바로 그 순간'에 저장 위치를 PlayerStart로 반환
-		EnsureSaveStartAt(SaveXform);
-		return CachedSaveStart;
-	}
-
-	// 저장 지점이 없으면 기존 규칙대로
-	return Super::ChoosePlayerStart_Implementation(Player);
 }
 
 bool AMapGameMode::TryGetSaveSpawnTransform(FTransform& OutTransform) const
@@ -81,9 +83,9 @@ FTransform AMapGameMode::ApplyFloorSnap(const FTransform& InTransform) const
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(SavePointFloorSnap), /*bTraceComplex*/false);
 	Params.bReturnPhysicalMaterial = false;
 
+	// 지형/월드 정적 오브젝트를 대상으로 바닥 검출
 	const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-
-	// 필요하면 확인용 디버그 라인
+	// 디버그 확인이 필요하면 주석 해제
 	// DrawDebugLine(World, Start, End, FColor::Green, false, 1.5f, 0, 1.0f);
 
 	if (bHit)
@@ -94,38 +96,4 @@ FTransform AMapGameMode::ApplyFloorSnap(const FTransform& InTransform) const
 		return Out;
 	}
 	return InTransform;
-}
-
-AActor* AMapGameMode::GetOrCreateSavePlayerStart()
-{
-	
-
-	UWorld* World = GetWorld();
-	if (!World) return nullptr;
-
-	// 1) 기존 PlayerStart 재활용 시도 (레벨에 하나라도 있으면 잡아씀)
-	for (TActorIterator<APlayerStart> It(World); It; ++It)
-	{
-		CachedSaveStart = *It;
-		break;
-	}
-
-	// 2) 없으면 새로 스폰
-	if (!CachedSaveStart)
-	{
-		FActorSpawnParameters Params;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		CachedSaveStart = World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), FTransform::Identity, Params);
-	}
-
-	return CachedSaveStart;
-}
-
-void AMapGameMode::EnsureSaveStartAt(const FTransform& SaveXform)
-{
-	AActor* PS = GetOrCreateSavePlayerStart();
-	if (PS)
-	{
-		PS->SetActorTransform(SaveXform);
-	}
 }
