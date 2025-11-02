@@ -29,6 +29,10 @@
 		{
 			"Name": "DisasterRecoveryClient",
 			"Enabled": true
+		},
+		{
+			"Name": "HDRIBackdrop",
+			"Enabled": true
 		}
 	]
 }
