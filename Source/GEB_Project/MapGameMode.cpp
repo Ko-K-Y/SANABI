@@ -3,27 +3,24 @@
 
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"            // GEngine
 #include "GameFramework/Pawn.h"
-#include "CollisionQueryParams.h"
-#include "DrawDebugHelpers.h"
 
 AMapGameMode::AMapGameMode()
 {
-	// 기본 설정은 필요시 조정
+	// 기본값 유지
 }
 
 void AMapGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	// 보통 Super가 기본 스폰 로직을 수행
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 
-	// 첫 스폰에도 세이브 포인트를 적용하고 싶을 때만 수행
 	if (bUseSavePointForInitialSpawn && IsValid(NewPlayer))
 	{
 		FTransform SaveXform;
 		if (TryGetSaveSpawnTransform(SaveXform))
 		{
-			// 기본 스폰을 한 번 수행했더라도, 세이브 포인트가 있다면 해당 위치에서 다시 시작시킴
+			PrintSpawnLocation(SaveXform, TEXT("InitialSpawn"));
 			RestartPlayerAtTransform(NewPlayer, SaveXform);
 		}
 	}
@@ -40,12 +37,11 @@ void AMapGameMode::RestartPlayer(AController* NewPlayer)
 	FTransform SaveXform;
 	if (TryGetSaveSpawnTransform(SaveXform))
 	{
-		// 세이브 포인트가 있으면 해당 위치에서 리스타트
+		PrintSpawnLocation(SaveXform, TEXT("RestartPlayer"));
 		RestartPlayerAtTransform(NewPlayer, SaveXform);
 	}
 	else
 	{
-		// 없으면 기존 규칙대로
 		Super::RestartPlayer(NewPlayer);
 	}
 }
@@ -61,39 +57,29 @@ bool AMapGameMode::TryGetSaveSpawnTransform(FTransform& OutTransform) const
 		return false;
 	}
 
-	FTransform T = SP->GetSavePoint();
-	if (bSnapToFloor)
-	{
-		T = ApplyFloorSnap(T);
-	}
-	OutTransform = T;
+	OutTransform = SP->GetSavePoint(); // 바닥 스냅/보정 없이 그대로 사용
 	return true;
 }
 
-FTransform AMapGameMode::ApplyFloorSnap(const FTransform& InTransform) const
+void AMapGameMode::PrintSpawnLocation(const FTransform& T, const TCHAR* Context) const
 {
-	UWorld* World = GetWorld();
-	if (!World) return InTransform;
+	const FVector L = T.GetLocation();
+	const FRotator R = T.Rotator();
 
-	const FVector BaseLoc = InTransform.GetLocation();
-	const FVector Start = BaseLoc + FVector(0.f, 0.f, FloorTraceDistance * 0.5f);
-	const FVector End = BaseLoc - FVector(0.f, 0.f, FloorTraceDistance);
-
-	FHitResult Hit;
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(SavePointFloorSnap), /*bTraceComplex*/false);
-	Params.bReturnPhysicalMaterial = false;
-
-	// 지형/월드 정적 오브젝트를 대상으로 바닥 검출
-	const bool bHit = World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-	// 디버그 확인이 필요하면 주석 해제
-	// DrawDebugLine(World, Start, End, FColor::Green, false, 1.5f, 0, 1.0f);
-
-	if (bHit)
+	// 화면 출력
+	if (GEngine)
 	{
-		FTransform Out = InTransform;
-		Out.SetLocation(Hit.ImpactPoint + FVector(0.f, 0.f, FloorOffset));
-		// 회전/스케일은 원래 값 유지
-		return Out;
+		const FString Msg = FString::Printf(
+			TEXT("[%s] Respawn to Location=%s  Rotation=%s"),
+			Context,
+			*L.ToString(), *R.ToString()
+		);
+		GEngine->AddOnScreenDebugMessage(
+			/*Key*/-1, /*Time*/2.5f, FColor::Cyan, Msg
+		);
 	}
-	return InTransform;
+
+	// 로그 출력
+	UE_LOG(LogTemp, Log, TEXT("[%s] Respawn to Location=%s  Rotation=%s"),
+		Context, *L.ToString(), *R.ToString());
 }
