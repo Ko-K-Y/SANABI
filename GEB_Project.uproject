@@ -21,14 +21,6 @@
 			"TargetAllowList": [
 				"Editor"
 			]
-		},
-		{
-			"Name": "MotionWarping",
-			"Enabled": true
-		},
-		{
-			"Name": "DisasterRecoveryClient",
-			"Enabled": true
 		}
 	]
 }
