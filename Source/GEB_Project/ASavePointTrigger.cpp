@@ -1,81 +1,100 @@
 ﻿#include "ASavePointTrigger.h"
+
 #include "Components/BoxComponent.h"
+#include "Components/ArrowComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h"
-#include "Engine/World.h"
-#include "SavePointSubsystem.h"
+#include "Engine/Engine.h"
 
-AASavePointTrigger::AASavePointTrigger()
+#include "SpawnPointSubsystem.h" // ★ Subsystem
+
+ASavePointTrigger::ASavePointTrigger()
 {
-	PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = false;
 
-	// Trigger 박스를 루트로
-	Trigger = CreateDefaultSubobject<UBoxComponent>(TEXT("Trigger"));
-	RootComponent = Trigger;
+    TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
+    SetRootComponent(TriggerBox);
 
-	Trigger->SetBoxExtent(FVector(120.f));
-	Trigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Trigger->SetCollisionResponseToAllChannels(ECR_Ignore);
-	Trigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	Trigger->SetGenerateOverlapEvents(true);
+    SpawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("SpawnPoint"));
+    SpawnPoint->SetupAttachment(RootComponent);
 
-	// 저장용 기준점 (배치해서 회전/오프셋 조정 가능)
-	SavePoint = CreateDefaultSubobject<USceneComponent>(TEXT("SavePoint"));
-	SavePoint->SetupAttachment(RootComponent);
+    TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    TriggerBox->SetCollisionObjectType(ECC_WorldDynamic);
+    TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+    TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    TriggerBox->SetGenerateOverlapEvents(true);
+
+    TriggerBox->InitBoxExtent(FVector(64.f, 64.f, 64.f));
 }
 
-void AASavePointTrigger::BeginPlay()
+void ASavePointTrigger::BeginPlay()
 {
-	Super::BeginPlay();
-	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AASavePointTrigger::OnTriggerBeginOverlap);
+    Super::BeginPlay();
+    if (TriggerBox)
+    {
+        TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ASavePointTrigger::OnTriggerBegin);
+    }
 }
 
-void AASavePointTrigger::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-	bool bFromSweep, const FHitResult& SweepResult)
+void ASavePointTrigger::OnTriggerBegin(UPrimitiveComponent* OverlappedComp,
+    AActor* OtherActor,
+    UPrimitiveComponent* OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult& SweepResult)
 {
-	if (!OtherActor || OtherActor == this) return;
-	if (bTriggerOnce && bAlreadyTriggered) return;
+    if (bAlreadyActivated && bOneShot) return;
+    if (!OtherActor) return;
 
-	APawn* Pawn = Cast<APawn>(OtherActor);
-	if (!Pawn) return;
+    if (bOnlyPlayerPawn)
+    {
+        APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+        if (OtherActor != PlayerPawn) return;
+    }
 
-	if (bOnlyPlayerControlled && !Pawn->IsPlayerControlled())
-	{
-		return;
-	}
-
-	// 권한 체크: 서버에서만 세이브포인트 갱신 (싱글도 서버 권한임)
-	if (GetLocalRole() != ROLE_Authority)
-	{
-		return;
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		if (USavePointSubsystem* SP = World->GetSubsystem<USavePointSubsystem>())
-		{
-			const FTransform SaveXform = GetSaveTransform();
-			SP->SetSavePoint(SaveXform);
-
-			if (bDebugLog)
-			{
-				UE_LOG(LogTemp, Log, TEXT("[SavePoint] Set at %s"), *SaveXform.GetLocation().ToString());
-			}
-
-			bAlreadyTriggered = true;
-			// 블루프린트 후킹 (UI/SFX)
-			OnSavePointActivated(SaveXform);
-		}
-	}
+    ActivateSavePoint(OtherActor);
 }
 
-FTransform AASavePointTrigger::GetSaveTransform() const
+void ASavePointTrigger::ActivateSavePoint(AActor* Activator)
 {
-	// SavePoint 컴포넌트가 존재하면 그 월드 트랜스폼을 사용
-	if (SavePoint)
-	{
-		return SavePoint->GetComponentTransform();
-	}
-	// 그렇지 않으면 액터의 월드 트랜스폼
-	return GetActorTransform();
+    if (bAlreadyActivated && bOneShot) return;
+
+    if (USpawnPointSubsystem* Sub = USpawnPointSubsystem::Get(this))
+    {
+        const FTransform SaveT = ComputeSaveTransform();
+        Sub->SetSpawnPoint(SaveT);
+        bAlreadyActivated = true;
+
+        PrintSavedTransform(SaveT, Activator);
+        OnSavePointActivated.Broadcast(Activator);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("ASavePointTrigger: SpawnPointSubsystem not found."));
+    }
+}
+
+FTransform ASavePointTrigger::ComputeSaveTransform() const
+{
+    if (bUseActorTransform)
+        return GetActorTransform();
+    return SpawnPoint ? SpawnPoint->GetComponentTransform() : GetActorTransform();
+}
+
+void ASavePointTrigger::PrintSavedTransform(const FTransform& T, AActor* Activator) const
+{
+    const FVector L = T.GetLocation();
+    const FRotator R = T.Rotator();
+
+    UE_LOG(LogTemp, Log, TEXT("[SavePoint] Saved -> Loc(%.2f, %.2f, %.2f) Rot(%.1f, %.1f, %.1f)"),
+        L.X, L.Y, L.Z, R.Roll, R.Pitch, R.Yaw);
+
+    if (bPrintOnScreen && GEngine)
+    {
+        FString Who = Activator ? Activator->GetName() : TEXT("Unknown");
+        GEngine->AddOnScreenDebugMessage(
+            -1, 3.0f, FColor::Green,
+            FString::Printf(TEXT("SavePoint %s\nLoc(%.1f, %.1f, %.1f)\nRot(%.1f, %.1f, %.1f)"),
+                *Who, L.X, L.Y, L.Z, R.Roll, R.Pitch, R.Yaw));
+    }
 }
