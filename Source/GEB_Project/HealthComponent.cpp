@@ -63,5 +63,5 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 	// 공통 로직
 	else if (CurrentHealth > 0) CurrentHealth -= Damage;
 
-	UE_LOG(LogTemp, Error, TEXT("Current Health: %d"), CurrentHealth)
+	UE_LOG(LogTemp, Warning, TEXT("Current Health: %d"), CurrentHealth)
 }

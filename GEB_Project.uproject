@@ -7,7 +7,11 @@
 		{
 			"Name": "GEB_Project",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"AIModule"
+			]
 		}
 	],
 	"Plugins": [
@@ -17,6 +21,14 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "MotionWarping",
+			"Enabled": true
+		},
+		{
+			"Name": "DisasterRecoveryClient",
+			"Enabled": true
 		}
 	]
 }
