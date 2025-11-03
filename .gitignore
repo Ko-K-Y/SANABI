@@ -13,12 +13,18 @@ Saved
 *.xcodeproj
 *.xcworkspace
 
-Content/Characters
+Content\Characters\Mannequins\Anims\Pistol
+Content\Characters\Mannequins\Anims\Death
+Content\Characters\Mannequins\Materials
+Content\Characters\Mannequins\Textures
+
+# ***에셋 파일***
 Content/AnimStarterPack
 Content/ParagonWraith
 Content/Robot02
 Content/SoulCity
 Content/Stage
+
 Content/RadicalMike
 Content/ParagonCrunch
-Content/ParagonMinions
+Content/GrapplingHook
