@@ -10,7 +10,11 @@
 
 UShooterAttackComponent::UShooterAttackComponent()
 {
-	
+	damage = 1;
+	maxAttackCoolTime = 2.f;
+	attackRange = 300.f;
+	isCooldown = false;
+	coolTime = 0.f;
 }
 
 void UShooterAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -27,8 +31,7 @@ void UShooterAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	}
 }
 
-
-void UShooterAttackComponent::PerformAttack_Implementation()
+void UShooterAttackComponent::PerformAttack()
 {
 	if (isCooldown) { return; }
 
@@ -52,7 +55,7 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 	{
 		UE_LOG(LogTemp, Error, TEXT("MuzzleLocation Not Found."))
 	}
-
+	
 	FVector SpawnLocation = MuzzleLocation->GetComponentLocation();
 	FRotator SpawnRotation = MuzzleLocation->GetComponentRotation();
 
@@ -80,8 +83,8 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 	{
 		// 쿨다운 시작
 		isCooldown = true;
+		coolTime = maxAttackCoolTime;
 
 		// 부모 클래스인 AttackComponent에서 Tick이 계속 호출됨.
 	}
-	
 }
