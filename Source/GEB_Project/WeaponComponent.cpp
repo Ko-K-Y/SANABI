@@ -121,7 +121,11 @@ void UWeaponComponent::Fire()
 			FVector MuzzleLocation = MuzzleComponent->GetComponentLocation();
     
 			// Muzzle 트레이스
-			Params.AddIgnoredActor(GetOwner()); 
+			FCollisionQueryParams MuzzleParams; // <--- 새로운 변수 선언
+			MuzzleParams.AddIgnoredActor(GetOwner());
+			// 복잡한 충돌체(Mesh)까지 정확히 검사하도록 설정
+			MuzzleParams.bTraceComplex = true;
+			
 			// 총이나 총구 이펙트가 트레이스에 걸리는 것을 방지하기 위해 무기 액터도 무시해야하면 생성자에 WeaponActor 추가해서 무시해주기
 			// Params.AddIgnoredActor(WeaponActor); 
 
@@ -130,7 +134,7 @@ void UWeaponComponent::Fire()
 				MuzzleLocation, // 총구 시작 위치
 				TargetPoint,    // 1단계에서 찾은 최종 목표 지점
 				ECollisionChannel::ECC_Pawn,
-				Params
+				MuzzleParams
 			);
 			
 			DrawDebugLine(
