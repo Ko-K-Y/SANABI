@@ -26,3 +26,24 @@ void UEnemyBaseAnimInstance::OnStateAnimationEnds()
 
 	}
 }
+
+void UEnemyBaseAnimInstance::SetAnimStateAttack()
+{
+	if(State == EAnimState::Die || State == EAnimState::Hit ) {
+		return;
+	}
+	State = EAnimState::Attack;
+}
+
+void UEnemyBaseAnimInstance::SetAnimStateHit()
+{
+	if (State == EAnimState::Die) {
+		return;
+	}
+	State = EAnimState::Hit;
+}
+
+void UEnemyBaseAnimInstance::SetAnimStateDie()
+{
+	State = EAnimState::Die;
+}

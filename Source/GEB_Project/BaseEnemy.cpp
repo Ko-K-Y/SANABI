@@ -43,10 +43,6 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 }
 
 void ABaseEnemy::DieProcess() {
-	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
-	if (animInst) {
-		animInst->SetAnimStateDie();
-	}
 	if (GetCharacterMovement()) {
 		GetCharacterMovement()->StopMovementImmediately();
 		GetCharacterMovement()->DisableMovement();

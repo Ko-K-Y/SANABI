@@ -1,4 +1,4 @@
-tsi// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "HealthComponent.h"
@@ -83,7 +83,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 		else {
 			UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
 			if (EnemyAnimInst) {
-				if (EnemyAnimInst->State == EAnimState::Hit) { return; }
+				if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
 				EnemyAnimInst->SetAnimStateHit();
 			}
 			CurrentHealth -= Damage;

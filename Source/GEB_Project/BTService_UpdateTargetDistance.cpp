@@ -7,6 +7,7 @@
 #include "EnemyMoveComponent.h"
 #include "Attack.h"
 #include "EnemyMove.h"
+#include "EnemyBaseAnimInstance.h"
 
 UBTService_UpdateTargetDistance::UBTService_UpdateTargetDistance()
 {
