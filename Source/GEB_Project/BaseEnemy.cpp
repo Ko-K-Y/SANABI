@@ -43,15 +43,16 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 }
 
 void ABaseEnemy::DieProcess() {
-	/*AController* Controller = GetController();
-	if (Controller) {
-		Controller->UnPossess();
-	}*/
-	//Controller Unpossess
-	//이부분 Controller를 못읽어서 컴파일 에러나는데 아시는분 있나요
-
-	//Do something
-
-	SetLifeSpan(3.0f);
+	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
+	if (animInst) {
+		animInst->SetAnimStateDie();
+	}
+	if (GetCharacterMovement()) {
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
 }
 
+void ABaseEnemy::DieProcessEnd() {
+	Destroy();
+}

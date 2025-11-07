@@ -44,5 +44,5 @@ public:
 	UFUNCTION()
 	virtual void DieProcess();
 
-
+	virtual void DieProcessEnd();
 };
