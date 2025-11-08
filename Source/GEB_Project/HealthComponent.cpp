@@ -7,6 +7,7 @@
 #include "ShieldInterface.h"
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
+#include "BaseEnemy.h"
 
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
@@ -49,19 +50,20 @@ int UHealthComponent::GetMaxHealth_Implementation()
 void UHealthComponent::ApplyDamage_Implementation(float Damage)
 {
 	AActor* Owner = GetOwner();
+	if (!Owner) return;
 
 	// 플레이어라면: 피격 상태면 데미지 무시, 아니면 적용
-	if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
+	if (Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
 	{
 		UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>();
 		if (PlayerState->bIsAttacked)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Player Attacked"))
-			return;
+				return;
 		}
 
 		UShieldComponent* ShieldComp = Owner->FindComponentByClass<UShieldComponent>();
-		if(ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp))
+		if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp))
 		{
 			int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
 			//실드 있을때 피격시 무적시간만 주고 bIsAttacked false 유지가 좋을듯.
@@ -73,13 +75,23 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 		if (CurrentHealth > 0) CurrentHealth -= Damage;
 	}
 	// 공통 로직
-	else if (CurrentHealth > 0) {
-		UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
-		if(EnemyAnimInst)
-		{
-			EnemyAnimInst->State = EAnimState::Hit;
+	else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
+		UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
+		if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)){
+			int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
 		}
-		CurrentHealth -= Damage;
+		else {
+			UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
+			if (EnemyAnimInst) {
+				if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
+				EnemyAnimInst->SetAnimStateHit();
+			}
+			CurrentHealth -= Damage;
+			if (CurrentHealth <= 0) {
+				CurrentHealth = 0;
+				EnemyOwner->DieProcess();
+			}
+		}
 	}
 
 	UE_LOG(LogTemp, Error, TEXT("Current Health: %d"), CurrentHealth)

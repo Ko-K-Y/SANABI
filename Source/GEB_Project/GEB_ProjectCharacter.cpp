@@ -1,16 +1,31 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "GEB_ProjectCharacter.h"
+
+// Engine / Components
+#include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
-#include "Camera/CameraComponent.h"
+#include "Engine/GameInstance.h"
 #include "Components/CapsuleComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/Controller.h"
+
+// Input
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InputCoreTypes.h" // EKeys
+
+// UI (UMG)
+#include "Blueprint/UserWidget.h"
+
+// Gameplay/Project
 #include "WeaponComponent.h"
+#include "ExperienceComponent.h"
+#include "PlayerProgressGameInstance.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -19,20 +34,17 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 {
-	// Set size for collision capsule
+	// 콜리전 캡슐
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+
+	// 컨트롤러 회전에 직접 반응하지 않도록
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
+	// 이동 컴포넌트 기본값(템플릿 값 유지)
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 500.f;
@@ -40,29 +52,91 @@ AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
+	// 카메라 붐
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->TargetArmLength = 400.0f;
+	CameraBoom->bUsePawnControlRotation = true;
 
-	// Create a follow camera
+	// 팔로우 카메라
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	FollowCamera->bUsePawnControlRotation = false;
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	// 경험치 컴포넌트
+	Experience = CreateDefaultSubobject<UExperienceComponent>(TEXT("Experience"));
 }
 
 void AGEB_ProjectCharacter::BeginPlay()
 {
-	// Call the base class  
 	Super::BeginPlay();
 
+	// 무기 컴포넌트 캐시
 	WeaponComp = FindComponentByClass<UWeaponComponent>();
+	if (!WeaponComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"));
+	}
 
-	if (!WeaponComp) UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"))
+	// 컨트롤러/로컬플레이어
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	
+	if (ULocalPlayer* LP = PC->GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LP))
+		{
+			if (DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, /*Priority*/0);
+			}
+		}
+	}
+
+	// 항상 표시되는 HUD
+	if (!StatusWidget && StatusWidgetClass)
+	{
+		StatusWidget = CreateWidget<UUserWidget>(PC, StatusWidgetClass);
+		if (StatusWidget)
+		{
+			StatusWidget->AddToViewport(/*ZOrder=*/0);
+			StatusWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+
+
+
+	// 시작 입력 모드: 게임 전용(커서 숨김)
+	{
+		FInputModeGameOnly Mode;
+		PC->SetInputMode(Mode);
+		PC->bShowMouseCursor = false;
+	}
+
+	// GameInstance로부터 경험치 상태 적용
+	if (Experience)
+	{
+		if (UGameInstance* BaseGI = GetGameInstance())
+		{
+			if (UPlayerProgressGameInstance* GI = Cast<UPlayerProgressGameInstance>(BaseGI))
+			{
+				GI->ApplyTo(Experience);
+			}
+		}
+	}
+
+#if !UE_BUILD_SHIPPING
+	// 시작시 디버그 표기
+	if (Experience && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1, 2.5f, FColor::Yellow,
+			FString::Printf(TEXT("Start Lv.%d  %d / %d"),
+				Experience->GetLevel(), Experience->GetCurExp(), Experience->GetExpToLv()));
+	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -70,84 +144,116 @@ void AGEB_ProjectCharacter::BeginPlay()
 
 void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	// MappingContext는 BeginPlay에서 추가
+
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	// Enhanced Input 액션 바인딩(두 파일 통합)
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		// Jump
+		if (JumpAction)
 		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		}
-	}
-	
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Move);
+		// Move
+		if (MoveAction)
+		{
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Move);
+		}
 
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
+		// Look
+		if (LookAction)
+		{
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
+		}
 
-		// Shooting
-		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Shoot);
-
-		// Reload
-		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Reload);
+		// Shoot / Reload (무기)
+		if (ShootAction)
+		{
+			EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Shoot);
+		}
+		if (ReloadAction)
+		{
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Reload);
+		}
 	}
 	else
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogTemplateCharacter, Error,
+			TEXT("'%s' Failed to find an Enhanced Input component!"),
+			*GetNameSafe(this));
 	}
+
+	// 테스트 키 바인딩(I/Z) 
+	PlayerInputComponent->BindKey(EKeys::I, IE_Pressed, this, &AGEB_ProjectCharacter::Cheat_AddExp50);
 }
 
 void AGEB_ProjectCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	const FVector2D Axis = Value.Get<FVector2D>();
+	if (!Controller) return;
 
-	if (Controller != nullptr)
-	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+	const FRotator Rot = Controller->GetControlRotation();
+	const FRotator YawRot(0.f, Rot.Yaw, 0.f);
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
-	}
+	AddMovementInput(Forward, Axis.Y);
+	AddMovementInput(Right, Axis.X);
 }
 
 void AGEB_ProjectCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
+	const FVector2D Axis = Value.Get<FVector2D>();
 	if (Controller != nullptr)
 	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerYawInput(Axis.X);
+		AddControllerPitchInput(Axis.Y);
 	}
 }
 
-void AGEB_ProjectCharacter::Shoot(const FInputActionValue& Value)
+
+void AGEB_ProjectCharacter::Cheat_AddExp50()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Shoot!"))
-	WeaponComp->Fire();
+	if (Experience)
+	{
+		Experience->AddEXP(50);
+		UE_LOG(LogTemplateCharacter, Log, TEXT("Cheat_AddExp50"));
+	}
 }
 
-void AGEB_ProjectCharacter::Reload(const FInputActionValue& Value)
+
+
+void AGEB_ProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Reload!"))
-	WeaponComp->Reload();
+	// 종료 시 진행도 저장
+	if (Experience)
+	{
+		if (UGameInstance* BaseGI = GetGameInstance())
+		{
+			if (UPlayerProgressGameInstance* GI = Cast<UPlayerProgressGameInstance>(BaseGI))
+			{
+				GI->CaptureFrom(Experience);
+			}
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+
+
+void AGEB_ProjectCharacter::Shoot(const FInputActionValue& /*Value*/)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Shoot!"));
+	if (WeaponComp) { WeaponComp->Fire(); }
+}
+
+void AGEB_ProjectCharacter::Reload(const FInputActionValue& /*Value*/)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Reload!"));
+	if (WeaponComp) { WeaponComp->Reload(); }
 }

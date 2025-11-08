@@ -8,8 +8,7 @@
 
 
 // Sets default values
-ABaseEnemy::ABaseEnemy(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+ABaseEnemy::ABaseEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -44,15 +43,12 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 }
 
 void ABaseEnemy::DieProcess() {
-	/*AController* Controller = GetController();
-	if (Controller) {
-		Controller->UnPossess();
-	}*/
-	//Controller Unpossess
-	//�̺κ� Controller�� ���о ������ �������µ� �ƽôº� �ֳ���
-
-	//Do something
-
-	SetLifeSpan(3.0f);
+	if (GetCharacterMovement()) {
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
 }
 
+void ABaseEnemy::DieProcessEnd() {
+	Destroy();
+}
