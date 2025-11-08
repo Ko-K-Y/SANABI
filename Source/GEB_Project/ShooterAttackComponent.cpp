@@ -34,16 +34,8 @@ void UShooterAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType
 void UShooterAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-}
-
-void UShooterAttackComponent::PerformAttack_Implementation()
-{
-	if (isCooldown) { return; }
 
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
-	if (!Owner || !ProjectileClass || !MuzzleLocation) return;
-
 	// BP에서 추가한 MuzzleLocation Scene Component 찾기
 	MuzzleLocation = nullptr;
 	TArray<USceneComponent*> SceneComponents;
@@ -61,6 +53,14 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 	{
 		UE_LOG(LogTemp, Error, TEXT("MuzzleLocation Not Found."))
 	}
+}
+
+void UShooterAttackComponent::PerformAttack_Implementation()
+{
+	if (isCooldown) { return; }
+
+	ACharacter* Owner = Cast<ACharacter>(GetOwner());
+	if (!Owner || !ProjectileClass || !MuzzleLocation) return;
 
 	// Muzzle에서 Projectile Spawn
 	FVector SpawnLocation = MuzzleLocation->GetComponentLocation();
