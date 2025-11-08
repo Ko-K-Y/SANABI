@@ -66,10 +66,4 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     BlackboardComp->SetValueAsBool(AttackKeyName, bInAttackRange);
     BlackboardComp->SetValueAsBool(TraceKeyName, bInTraceRange);
     BlackboardComp->SetValueAsBool(CanAttackKeyName, bCanAttack);
-
-    UE_LOG(LogTemp, Warning, TEXT("Distance: %.2f | AttackRange: %.2f | TraceRange: %.2f | InAttack: %s | InTrace: %s | CanAttack: %s"),
-        Distance, AttackRange, TraceRange,
-        bInAttackRange ? TEXT("TRUE") : TEXT("FALSE"),
-        bInTraceRange ? TEXT("TRUE") : TEXT("FALSE"),
-        bCanAttack ? TEXT("TRUE") : TEXT("FALSE"));
 }

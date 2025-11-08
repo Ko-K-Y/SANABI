@@ -32,4 +32,7 @@ protected:
 public:
 	// UAttackComponent의 핵심 함수를 오버라이드하여 발사 로직을 구현
 	virtual void PerformAttack_Implementation() override;
+	
+	virtual bool GetisCoolDown_Implementation() override;
+	virtual float GetattackRange_Implementation() override;
 };

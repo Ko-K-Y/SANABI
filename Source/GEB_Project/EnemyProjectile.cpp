@@ -4,7 +4,8 @@
 #include "EnemyProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
-
+#include "GEB_ProjectCharacter.h"
+#include "HealthComponent.h"
 
 // Sets default values
 AEnemyProjectile::AEnemyProjectile()
@@ -32,8 +33,8 @@ AEnemyProjectile::AEnemyProjectile()
 	// Use a ProjectileMovementComponent to govern this projectile's movement
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
-	ProjectileMovement->InitialSpeed = 5000.f;
-	ProjectileMovement->MaxSpeed = 5000.f;
+	ProjectileMovement->InitialSpeed = 500.f;
+	ProjectileMovement->MaxSpeed = 500.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false; 
 	ProjectileMovement->ProjectileGravityScale = 0.0f; // 중력 영향 X
@@ -57,11 +58,28 @@ void AEnemyProjectile::Tick(float DeltaTime)
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
+	// 자신의 충돌과 무시할 액터는 무시
+	if (OtherActor && OtherActor != this && OtherComp)
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation()); // 충돌하면 힘을 가함.
-
-		Destroy();
+		// 캐릭터 클래스에 맞게 캐스팅 (예: AMyCharacter)
+		AGEB_ProjectCharacter* HitCharacter = Cast<AGEB_ProjectCharacter>(OtherActor);
+		if (HitCharacter)
+		{
+			// HealthComponent 가져오기
+			UHealthComponent* HealthComp = HitCharacter->FindComponentByClass<UHealthComponent>();
+			if (HealthComp)
+			{
+				HealthComp->ApplyDamage(ProjectileDamage);
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage
+					(-1,3.f,FColor::Green,
+						FString::Printf(TEXT("HP: %d"), HealthComp->GetCurrentHealth()));
+				}
+				
+			}
+		}
 	}
+	
+	Destroy();
 }

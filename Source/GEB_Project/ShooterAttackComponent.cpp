@@ -6,13 +6,14 @@
 #include "Kismet/KismetMathLibrary.h" // 회전 계산을 위해 포함
 #include "Slate/SGameLayerManager.h"
 #include "EnemyBaseAnimInstance.h"
+#include "Kismet/GameplayStatics.h"
 
 
 UShooterAttackComponent::UShooterAttackComponent()
 {
 	damage = 1;
 	maxAttackCoolTime = 2.f;
-	attackRange = 300.f;
+	attackRange = 600.f;
 	isCooldown = false;
 	coolTime = 0.f;
 }
@@ -64,8 +65,14 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 
 	// Muzzle에서 Projectile Spawn
 	FVector SpawnLocation = MuzzleLocation->GetComponentLocation();
-	FRotator SpawnRotation = MuzzleLocation->GetComponentRotation();
 
+	// 플레이어 캐릭터 가져오기
+	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (!PlayerCharacter) return;
+
+	// 플레이어 위치와 총구 위치 사이 회전 계산
+	FRotator SpawnRotation = UKismetMathLibrary::FindLookAtRotation(SpawnLocation, PlayerCharacter->GetActorLocation());
+	
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = Owner;
 	SpawnParams.Instigator = Owner;
@@ -85,14 +92,17 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 		EnemyAnimInst->SetAnimStateAttack();
 	}
 
-	// 디버그 메시지
-	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("ShooterAttack!")); }
-	
-
 	// 쿨다운 시작
 	isCooldown = true;
 	coolTime = maxAttackCoolTime;
+}
 
-	// 부모 클래스인 AttackComponent에서 Tick이 계속 호출됨.
-	
+bool UShooterAttackComponent::GetisCoolDown_Implementation()
+{
+	return isCooldown;
+}
+
+float UShooterAttackComponent::GetattackRange_Implementation()
+{
+	return attackRange;
 }
