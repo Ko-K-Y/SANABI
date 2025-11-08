@@ -5,6 +5,8 @@
 #include "GameFramework/Controller.h"
 #include "EnemyBaseAnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include <Kismet/GameplayStatics.h>
+#include "ExperienceComponent.h"
 
 
 // Sets default values
@@ -46,6 +48,18 @@ void ABaseEnemy::DieProcess() {
 	if (GetCharacterMovement()) {
 		GetCharacterMovement()->StopMovementImmediately();
 		GetCharacterMovement()->DisableMovement();
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+		if (PlayerPawn)
+		{
+			if (UExperienceComponent* ExpComp = PlayerPawn->FindComponentByClass<UExperienceComponent>())
+			{
+				ExpComp->AddEXP(ExpReward);
+			}
+		}
 	}
 }
 

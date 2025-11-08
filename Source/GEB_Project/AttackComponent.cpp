@@ -94,13 +94,13 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 	const bool TargetIsPlayer = TargetController ? TargetController->IsPlayerController() : false;
 
 	// 동일 진영(둘 다 플레이어이거나 둘 다 비플레이어)인 경우 무시
-	/*if (OwnerIsPlayer == TargetIsPlayer) {
+	if (OwnerIsPlayer == TargetIsPlayer) {
 		if (GEngine) {
 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow,
 				FString::Printf(TEXT("Ignored hit (same side): %s -> %s"), *GetOwner()->GetName(), *Target->GetName()));
 		}
 		return;
-	}*/
+	}
 
 	if (GEngine) {
 		GEngine->AddOnScreenDebugMessage(33, 1.f, FColor::Yellow, FString::Printf(TEXT("Attack Hit Target: %s for %d damage"), *Target->GetName(), damage));

@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UHealthComponent* HealthComp;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExpReward")
+	int32 ExpReward = 50;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
