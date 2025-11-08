@@ -31,7 +31,13 @@ void UShooterAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType
 	}
 }
 
-void UShooterAttackComponent::PerformAttack()
+void UShooterAttackComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	
+}
+
+void UShooterAttackComponent::PerformAttack_Implementation()
 {
 	if (isCooldown) { return; }
 
@@ -55,7 +61,8 @@ void UShooterAttackComponent::PerformAttack()
 	{
 		UE_LOG(LogTemp, Error, TEXT("MuzzleLocation Not Found."))
 	}
-	
+
+	// Muzzle에서 Projectile Spawn
 	FVector SpawnLocation = MuzzleLocation->GetComponentLocation();
 	FRotator SpawnRotation = MuzzleLocation->GetComponentRotation();
 
@@ -71,20 +78,21 @@ void UShooterAttackComponent::PerformAttack()
 		SpawnParams
 	);
 
+	// AnimInstance의 State를 Attack으로 변경.
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
 	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
 		EnemyAnimInst->SetAnimStateAttack();
 	}
-	
+
+	// 디버그 메시지
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("ShooterAttack!")); }
 	
-	if (Projectile)
-	{
-		// 쿨다운 시작
-		isCooldown = true;
-		coolTime = maxAttackCoolTime;
 
-		// 부모 클래스인 AttackComponent에서 Tick이 계속 호출됨.
-	}
+	// 쿨다운 시작
+	isCooldown = true;
+	coolTime = maxAttackCoolTime;
+
+	// 부모 클래스인 AttackComponent에서 Tick이 계속 호출됨.
+	
 }
