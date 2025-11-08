@@ -54,8 +54,8 @@ void UAttackComponent::PerformAttack_Implementation() {
 
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (!Owner) return;
-	//OwnerÀÇ °íÀ¯ °ø°Ý »ç¿ë, ¾Ö´Ï¸ÅÀÌ¼Ç, ÀÌÆåÆ® È£Ãâ
-	// ¾Ö´Ï¸ÅÀÌ¼Ç Notify¿¡¼­ ÇÇ°ÝÀ§Ä¡ °è»êÈÄ OnAttackHit È£Ãâ
+	//Ownerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½, ï¿½ï¿½ï¿½ï¿½Æ® È£ï¿½ï¿½
+	// ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ Notifyï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ OnAttackHit È£ï¿½ï¿½
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
 	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
@@ -64,7 +64,7 @@ void UAttackComponent::PerformAttack_Implementation() {
 
 
 	/*AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	if (!AIController) return;*/ //AI »óÅÂº¯È­ »ç¿ëÇÒ ÀÏ ÀÖÀ¸¸é »ç¿ë
+	if (!AIController) return;*/ //AI ï¿½ï¿½ï¿½Âºï¿½È­ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack!")); }
 
 	isCooldown = true;
@@ -81,9 +81,9 @@ float UAttackComponent::GetattackRange_Implementation() {
 
 void UAttackComponent::OnAttackHit(AActor* Target) {
 	if (!Target) { return; }
-	// Target HealthComponent ApplyDamage È£Ãâ µî
+	// Target HealthComponent ApplyDamage È£ï¿½ï¿½ ï¿½ï¿½
 	
-	// ¼ÒÀ¯ÀÚ¿Í ´ë»óÀÇ ÄÁÆ®·Ñ·¯¸¦ È®ÀÎÇÏ¿© ÇÃ·¹ÀÌ¾î¡êºñÇÃ·¹ÀÌ¾î(Enemy) °ü°è¸¸ Çã¿ë
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½(Enemy) ï¿½ï¿½ï¿½è¸¸ ï¿½ï¿½ï¿½
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	APawn* TargetPawn = Cast<APawn>(Target);
 
@@ -93,7 +93,7 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 	const bool OwnerIsPlayer = OwnerController ? OwnerController->IsPlayerController() : false;
 	const bool TargetIsPlayer = TargetController ? TargetController->IsPlayerController() : false;
 
-	// µ¿ÀÏ Áø¿µ(µÑ ´Ù ÇÃ·¹ÀÌ¾îÀÌ°Å³ª µÑ ´Ù ºñÇÃ·¹ÀÌ¾î)ÀÎ °æ¿ì ¹«½Ã
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½Ì°Å³ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	/*if (OwnerIsPlayer == TargetIsPlayer) {
 		if (GEngine) {
 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow,
