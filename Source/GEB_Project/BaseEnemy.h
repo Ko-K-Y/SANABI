@@ -17,7 +17,7 @@ class GEB_PROJECT_API ABaseEnemy : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	ABaseEnemy();
+	ABaseEnemy(const FObjectInitializer& ObjectInitializer);
 
 	FORCEINLINE UAttackComponent* GetAttackComponent() const { return AttackComp; }
 	FORCEINLINE UEnemyMoveComponent* GetMoveComponent() const { return MoveComp; }
