@@ -5,12 +5,17 @@
 #include "EnemyBaseAnimInstance.h"
 #include "HealthInterface.h"
 #include "HealthComponent.h"
+#include "Engine/Engine.h"
+#include "GameFramework/Pawn.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/OverlapResult.h"
 
 // Sets default values for this component's properties
 UAttackComponent::UAttackComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
@@ -19,6 +24,8 @@ UAttackComponent::UAttackComponent()
 	attackRange = 300.f;
 	isCooldown = false;
 	coolTime = 0.f;
+	AttackCapsuleRadius = 20.f;
+	AttackCapsuleHalfHeight = 40.f;
 }
 
 
@@ -26,6 +33,47 @@ UAttackComponent::UAttackComponent()
 void UAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+	if (!MeshComp) return;
+
+	// ������ ������ ���� ������ ����
+	for (UCapsuleComponent* C : SocketCapsules)
+	{
+		if (C) C->DestroyComponent();
+	}
+	SocketCapsules.Empty();
+
+	// �� ���ϸ��� ĸ�� ������Ʈ ���� �� ������ �̺�Ʈ ���ε�
+	for (const FName& SocketName : AttackSocketNames)
+	{
+		if (SocketName == NAME_None) continue;
+		if (!MeshComp->DoesSocketExist(SocketName)) continue;
+
+		UCapsuleComponent* Capsule = NewObject<UCapsuleComponent>(Owner);
+		if (!Capsule) continue;
+
+		Capsule->RegisterComponent();
+		Capsule->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
+		Capsule->SetRelativeLocation(FVector::ZeroVector);
+		Capsule->SetCapsuleSize(AttackCapsuleRadius, AttackCapsuleHalfHeight);
+
+		// ������ �̺�Ʈ Ȱ��ȭ: �ִϸ��̼� ���¸� Ȯ���� �� ó��
+		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		Capsule->SetCollisionObjectType(ECC_WorldDynamic);
+		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		Capsule->SetGenerateOverlapEvents(true);
+		Capsule->SetHiddenInGame(true);
+
+		// ������ ���ε�
+		Capsule->OnComponentBeginOverlap.AddDynamic(this, &UAttackComponent::OnSocketOverlapBegin);
+
+		SocketCapsules.Add(Capsule);
+	}
 }
 
 
@@ -47,6 +95,26 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 			isCooldown = false;
 		}
 	}
+
+	// �ִϸ��̼� ���¸� Ȯ���ؼ� Attack ���°� �ƴϸ� �ֱ� ��Ʈ ���� �ʱ�ȭ
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+		if (MeshComp)
+		{
+			if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
+			{
+				if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst))
+				{
+					if (EnemyAnimInst->State != EAnimState::Attack)
+					{
+						RecentlyHitActors.Empty();
+					}
+				}
+			}
+		}
+	}
 }
 
 void UAttackComponent::PerformAttack_Implementation() {
@@ -55,16 +123,13 @@ void UAttackComponent::PerformAttack_Implementation() {
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (!Owner) return;
 	//Owner�� ���� ���� ���, �ִϸ��̼�, ����Ʈ ȣ��
-	// �ִϸ��̼� Notify���� �ǰ���ġ ����� OnAttackHit ȣ��
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
 	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
 		EnemyAnimInst->SetAnimStateAttack();
 	}
+	RecentlyHitActors.Empty();
 
-
-	/*AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	if (!AIController) return;*/ //AI ���º�ȭ ����� �� ������ ���
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack!")); }
 
 	isCooldown = true;
@@ -81,9 +146,7 @@ float UAttackComponent::GetattackRange_Implementation() {
 
 void UAttackComponent::OnAttackHit(AActor* Target) {
 	if (!Target) { return; }
-	// Target HealthComponent ApplyDamage ȣ�� ��
-	
-	// �����ڿ� ����� ��Ʈ�ѷ��� Ȯ���Ͽ� �÷��̾����÷��̾�(Enemy) ���踸 ���
+
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	APawn* TargetPawn = Cast<APawn>(Target);
 
@@ -94,29 +157,64 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 	const bool TargetIsPlayer = TargetController ? TargetController->IsPlayerController() : false;
 
 	// ���� ����(�� �� �÷��̾��̰ų� �� �� ���÷��̾�)�� ��� ����
-	/*if (OwnerIsPlayer == TargetIsPlayer) {
+	if (OwnerIsPlayer == TargetIsPlayer) {
 		if (GEngine) {
 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow,
 				FString::Printf(TEXT("Ignored hit (same side): %s -> %s"), *GetOwner()->GetName(), *Target->GetName()));
 		}
 		return;
-	}*/
+	}
 
 	if (GEngine) {
 		GEngine->AddOnScreenDebugMessage(33, 1.f, FColor::Yellow, FString::Printf(TEXT("Attack Hit Target: %s for %d damage"), *Target->GetName(), damage));
 		UE_LOG(LogTemp, Log, TEXT("%s hit %s for %d"), *GetOwner()->GetName(), *Target->GetName(), damage);
 	}
 
-	if(Target->Implements<UHealthInterface>()) {
-		IHealthInterface::Execute_ApplyDamage(Target, damage);
-	}
-
 	if (UHealthComponent* HealthComp = Target->FindComponentByClass<UHealthComponent>()) {
-		IHealthInterface::Execute_ApplyDamage(HealthComp, static_cast<float>(damage));
-		if(GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(34, 1.f, FColor::Cyan, FString::Printf(TEXT("Target Current Health: %d"), HealthComp->GetCurrentHealth_Implementation()));
-		}
-		return;
+		HealthComp->ApplyDamage_Implementation(static_cast<float>(damage));
 	}
+}
+
+// ���� ĸ�� ������ �ݹ�: �ִϸ��̼� �ν��Ͻ��� Attack ������ ���� �ǰ� ó��
+void UAttackComponent::OnSocketOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor) return;
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+	if (OtherActor == Owner) return;
+
+	// �ִϸ��̼� �ν��Ͻ��� ���� Ȯ��
+	USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+	if (!MeshComp) return;
+	UAnimInstance* AnimInst = MeshComp->GetAnimInstance();
+	if (!AnimInst) return;
+	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst);
+	if (!EnemyAnimInst) return;
+
+	// Attack ���°� �ƴϸ� ����
+	if (EnemyAnimInst->State != EAnimState::Attack) return;
+
+	// �ߺ� ��Ʈ ����: �̹� �̹� ���ݿ��� ��Ʈ�� ���͸� ����
+	if (RecentlyHitActors.Contains(OtherActor)) return;
+
+	// ���� ����(ĸ�� ����)
+	const FVector Center = OverlappedComp->GetComponentLocation();
+	const FVector Forward = Owner->GetActorForwardVector().GetSafeNormal();
+	const FVector ToHit = (OtherActor->GetActorLocation() - Center);
+	if (ToHit.IsNearlyZero()) return;
+	const float Dot = FVector::DotProduct(Forward, ToHit.GetSafeNormal());
+	if (Dot <= 0.f) return;
+
+	// ���� ��Ʈ ó��
+	OnAttackHit(OtherActor);
+	RecentlyHitActors.Add(OtherActor);
+
+#if ENABLE_DRAW_DEBUG
+	// �ð�ȭ: ��Ʈ �߻� ���� ǥ��
+	if (UWorld* World = Owner->GetWorld())
+	{
+		DrawDebugSphere(World, OtherActor->GetActorLocation(), 8.f, 6, FColor::Yellow, false, 0.5f);
+	}
+#endif
 }
