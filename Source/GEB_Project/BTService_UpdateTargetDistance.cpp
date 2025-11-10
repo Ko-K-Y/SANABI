@@ -13,7 +13,7 @@ UBTService_UpdateTargetDistance::UBTService_UpdateTargetDistance()
 {
     NodeName = TEXT("Update Target Distance");
     // �⺻ ���� �ֱ� (�����Ϳ��� Service ����� Interval�� ���� ����)
-    Interval = 0.2f;
+    Interval = 0.01f;
 }
 
 void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
