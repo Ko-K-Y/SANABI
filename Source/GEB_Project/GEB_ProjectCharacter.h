@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HealthInterface.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
@@ -15,8 +16,8 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 
-class UWeaponComponent;        // ¹«±â
-class UExperienceComponent;    // °æÇèÄ¡/·¹º§
+class UWeaponComponent;        // ï¿½ï¿½ï¿½ï¿½
+class UExperienceComponent;    // ï¿½ï¿½ï¿½ï¿½Ä¡/ï¿½ï¿½ï¿½ï¿½
 
 // UI
 class UUserWidget;
@@ -36,7 +37,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: Å° ¹ÙÀÎµù¿¡¼­ Á÷Á¢ »ç¿ë) --------
+	// -------- Input handlers (public: Å° ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½) --------
 	void Cheat_AddExp50();   // I key
 	void ToggleSkillTree();  // Z key
 
@@ -53,7 +54,7 @@ protected:
 	// -------- Combat --------
 	void Shoot(const FInputActionValue& Value);
 	void Reload(const FInputActionValue& Value);
-
+	
 	// ---------- Components ----------
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
@@ -83,7 +84,7 @@ protected:
 	UInputAction* ReloadAction = nullptr;
 
 	// ---------- Gameplay ----------
-	/** ¹«±â ÄÄÆ÷³ÍÆ®(·±Å¸ÀÓ¿¡ FindComponentByClass·Î Ä³½Ã) */
+	/** ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®(ï¿½ï¿½Å¸ï¿½Ó¿ï¿½ FindComponentByClassï¿½ï¿½ Ä³ï¿½ï¿½) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponComponent* WeaponComp = nullptr;
 
@@ -92,7 +93,7 @@ protected:
 	UExperienceComponent* Experience = nullptr;
 
 	// ---------- UI ----------
-	/** Ç×»ó º¸ÀÌ´Â »óÅÂ HUD (·¹º§/°æÇèÄ¡ µî) */
+	/** ï¿½×»ï¿½ ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½ï¿½ï¿½ï¿½ HUD (ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½) */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StatusWidgetClass;
 

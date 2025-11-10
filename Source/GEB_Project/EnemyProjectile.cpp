@@ -19,7 +19,7 @@ AEnemyProjectile::AEnemyProjectile()
 
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
-	CollisionComp->InitSphereRadius(5.0f);
+	CollisionComp->InitSphereRadius(1.0f);
 	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");
 	CollisionComp->OnComponentHit.AddDynamic(this, &AEnemyProjectile::OnHit);		// set up a notification for when this component hits something blocking
 
@@ -58,28 +58,26 @@ void AEnemyProjectile::Tick(float DeltaTime)
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// 자신의 충돌과 무시할 액터는 무시
+	GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Red, FString::Printf(TEXT("Hit Actor: %s"), *OtherActor->GetName()));
+
+	/*// 자신의 충돌과 무시할 액터는 무시
 	if (OtherActor && OtherActor != this && OtherComp)
 	{
-		// 캐릭터 클래스에 맞게 캐스팅 (예: AMyCharacter)
-		AGEB_ProjectCharacter* HitCharacter = Cast<AGEB_ProjectCharacter>(OtherActor);
-		if (HitCharacter)
+		// HealthComponent가 부착된 경우
+		UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>();
+		if (HealthComp)
 		{
-			// HealthComponent 가져오기
-			UHealthComponent* HealthComp = HitCharacter->FindComponentByClass<UHealthComponent>();
-			if (HealthComp)
-			{
-				HealthComp->ApplyDamage(ProjectileDamage);
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage
-					(-1,3.f,FColor::Green,
-						FString::Printf(TEXT("HP: %d"), HealthComp->GetCurrentHealth()));
-				}
-				
-			}
+			HealthComp->ApplyDamage(ProjectileDamage);
+
+			GEngine->AddOnScreenDebugMessage(
+				-1, 3.f, FColor::Purple,
+				FString::Printf(TEXT("HP: %d"), HealthComp->GetCurrentHealth()));
 		}
-	}
-	
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("No HealthComponent!"));
+			UE_LOG(LogTemp, Warning, TEXT("OtherActor does not have HealthComponent!"));
+		}
+	}*/
 	Destroy();
 }

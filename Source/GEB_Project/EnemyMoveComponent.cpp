@@ -12,6 +12,9 @@ UEnemyMoveComponent::UEnemyMoveComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
+	traceRange = 1000.f;
+	movementSpeed = 600.f;
+	jumpSpeed = 100.f;
 }
 
 
@@ -21,9 +24,7 @@ void UEnemyMoveComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	traceRange = 1000.f;
-	movementSpeed = 600.f;
-	jumpSpeed = 100.f;
+
 }
 
 
