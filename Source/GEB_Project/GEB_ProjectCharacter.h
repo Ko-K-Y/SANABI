@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "HealthInterface.h"
 #include "GEB_ProjectCharacter.generated.h"
 
 // ---------- Forward Declarations ----------
@@ -14,9 +15,10 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-
 class UWeaponComponent;        // 무기
 class UExperienceComponent;    // 경험치/레벨
+class UHealthComponent;
+class UWBP_StatusHUD;
 
 // UI
 class UUserWidget;
@@ -38,12 +40,14 @@ public:
 
 	// -------- Input handlers (public: 키 바인딩에서 직접 사용) --------
 	void Cheat_AddExp50();   // I key
-	void ToggleSkillTree();  // Z key
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION()
+	void DebugHurt();
 
 protected:
 	// -------- Movement / Look --------
@@ -99,5 +103,12 @@ protected:
 	UPROPERTY(Transient)
 	UUserWidget* StatusWidget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UWBP_StatusHUD> StatusHUDClass;
+
+	UPROPERTY()
+	TObjectPtr<UWBP_StatusHUD> StatusHUD;
 };
