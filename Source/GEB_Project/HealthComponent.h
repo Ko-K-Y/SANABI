@@ -7,6 +7,8 @@
 #include "HealthInterface.h"
 #include "HealthComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, Current, int32, Max);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GEB_PROJECT_API UHealthComponent : public UActorComponent, public IHealthInterface
@@ -22,9 +24,12 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health")
-	int MaxHealth; // 블루 프린트에서 초기값 할당
-	UPROPERTY(blueprintReadWrite, EditAnywhere, Category = "Health")
-	int CurrentHealth;
+	int MaxHealth = 3;          // 초기 3칸
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health")
+	int CurrentHealth = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Health")
+	int MaxLimit = 5;
 
 public:	
 	// Called every frame
@@ -34,4 +39,18 @@ public:
 	virtual int GetCurrentHealth_Implementation() override;
 	virtual int GetMaxHealth_Implementation() override;
 	virtual void ApplyDamage_Implementation(float Damage) ;
+
+	// 편의 함수들(스킬/회복/초기화용)
+	UFUNCTION(BlueprintCallable) void Init(int32 InMax, int32 InCurrent);
+	UFUNCTION(BlueprintCallable) void SetMax(int32 InMax, bool bFillToMax = false);
+	UFUNCTION(BlueprintCallable) void AddMax(int32 Delta, bool bFillToMax = false);
+	UFUNCTION(BlueprintCallable) void Heal(int32 Amount);
+	UFUNCTION(BlueprintCallable) void FillToMax();
+
+	// 델리게이트(위젯에서 Bind)
+	UPROPERTY(BlueprintAssignable) FOnHealthChanged OnHealthChanged;
+	UPROPERTY(BlueprintAssignable) FOnDeath         OnDeath;
+
+private:
+	void Broadcast(); // 내부 통지
 };
