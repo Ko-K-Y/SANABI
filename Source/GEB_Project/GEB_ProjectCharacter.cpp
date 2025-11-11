@@ -34,15 +34,15 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 {
-	// ÄÝ¸®Àü Ä¸½¶
+	// ï¿½Ý¸ï¿½ï¿½ï¿½ Ä¸ï¿½ï¿½
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-	// ÄÁÆ®·Ñ·¯ È¸Àü¿¡ Á÷Á¢ ¹ÝÀÀÇÏÁö ¾Êµµ·Ï
+	// ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// ÀÌµ¿ ÄÄÆ÷³ÍÆ® ±âº»°ª(ÅÛÇÃ¸´ °ª À¯Áö)
+	// ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½âº»ï¿½ï¿½(ï¿½ï¿½ï¿½Ã¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 700.f;
@@ -52,18 +52,18 @@ AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Ä«¸Þ¶ó ºÕ
+	// Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 400.0f;
 	CameraBoom->bUsePawnControlRotation = true;
 
-	// ÆÈ·Î¿ì Ä«¸Þ¶ó
+	// ï¿½È·Î¿ï¿½ Ä«ï¿½Þ¶ï¿½
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// °æÇèÄ¡ ÄÄÆ÷³ÍÆ®
+	// ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 	Experience = CreateDefaultSubobject<UExperienceComponent>(TEXT("Experience"));
 }
 
@@ -71,14 +71,14 @@ void AGEB_ProjectCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ¹«±â ÄÄÆ÷³ÍÆ® Ä³½Ã
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ä³ï¿½ï¿½
 	WeaponComp = FindComponentByClass<UWeaponComponent>();
 	if (!WeaponComp)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"));
 	}
 
-	// ÄÁÆ®·Ñ·¯/·ÎÄÃÇÃ·¹ÀÌ¾î
+	// ï¿½ï¿½Æ®ï¿½Ñ·ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
@@ -95,7 +95,7 @@ void AGEB_ProjectCharacter::BeginPlay()
 		}
 	}
 
-	// Ç×»ó Ç¥½ÃµÇ´Â HUD
+	// ï¿½×»ï¿½ Ç¥ï¿½ÃµÇ´ï¿½ HUD
 	if (!StatusWidget && StatusWidgetClass)
 	{
 		StatusWidget = CreateWidget<UUserWidget>(PC, StatusWidgetClass);
@@ -108,14 +108,14 @@ void AGEB_ProjectCharacter::BeginPlay()
 
 
 
-	// ½ÃÀÛ ÀÔ·Â ¸ðµå: °ÔÀÓ Àü¿ë(Ä¿¼­ ¼û±è)
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Ä¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	{
 		FInputModeGameOnly Mode;
 		PC->SetInputMode(Mode);
 		PC->bShowMouseCursor = false;
 	}
 
-	// GameInstance·ÎºÎÅÍ °æÇèÄ¡ »óÅÂ Àû¿ë
+	// GameInstanceï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (Experience)
 	{
 		if (UGameInstance* BaseGI = GetGameInstance())
@@ -128,7 +128,7 @@ void AGEB_ProjectCharacter::BeginPlay()
 	}
 
 #if !UE_BUILD_SHIPPING
-	// ½ÃÀÛ½Ã µð¹ö±× Ç¥±â
+	// ï¿½ï¿½ï¿½Û½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
 	if (Experience && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(
@@ -144,11 +144,11 @@ void AGEB_ProjectCharacter::BeginPlay()
 
 void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// MappingContext´Â BeginPlay¿¡¼­ Ãß°¡
+	// MappingContextï¿½ï¿½ BeginPlayï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½
 
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// Enhanced Input ¾×¼Ç ¹ÙÀÎµù(µÎ ÆÄÀÏ ÅëÇÕ)
+	// Enhanced Input ï¿½×¼ï¿½ ï¿½ï¿½ï¿½Îµï¿½(ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Jump
@@ -170,7 +170,7 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
 		}
 
-		// Shoot / Reload (¹«±â)
+		// Shoot / Reload (ï¿½ï¿½ï¿½ï¿½)
 		if (ShootAction)
 		{
 			EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AGEB_ProjectCharacter::Shoot);
@@ -187,7 +187,7 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 			*GetNameSafe(this));
 	}
 
-	// Å×½ºÆ® Å° ¹ÙÀÎµù(I/Z) 
+	// ï¿½×½ï¿½Æ® Å° ï¿½ï¿½ï¿½Îµï¿½(I/Z) 
 	PlayerInputComponent->BindKey(EKeys::I, IE_Pressed, this, &AGEB_ProjectCharacter::Cheat_AddExp50);
 }
 
@@ -230,7 +230,7 @@ void AGEB_ProjectCharacter::Cheat_AddExp50()
 
 void AGEB_ProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Á¾·á ½Ã ÁøÇàµµ ÀúÀå
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½àµµ ï¿½ï¿½ï¿½ï¿½
 	if (Experience)
 	{
 		if (UGameInstance* BaseGI = GetGameInstance())
