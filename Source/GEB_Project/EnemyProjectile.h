@@ -12,6 +12,8 @@ UCLASS()
 class GEB_PROJECT_API AEnemyProjectile : public AActor
 {
 	GENERATED_BODY()
+
+	int ProjectileDamage = 1.f;
 	
 	/** Sphere collision component */
 	UPROPERTY(VisibleDefaultsOnly, Category=Projectile)
@@ -41,4 +43,5 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	
 };

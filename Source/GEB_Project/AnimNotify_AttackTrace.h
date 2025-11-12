@@ -12,13 +12,13 @@ class GEB_PROJECT_API UAnimNotify_AttackTrace : public UAnimNotify
     GENERATED_BODY()
 
 public:
-    // ¼ÒÄÏÀ» ÁöÁ¤ÇÏ¸é ¼ÒÄÏ À§Ä¡¿¡¼­, ºñ¿öµÎ¸é ¸Þ½¬ ·çÆ® À§Ä¡¿¡¼­ Æ®·¹ÀÌ½º
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½Î¸ï¿½ ï¿½Þ½ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½Ä¡ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½Ì½ï¿½
     UPROPERTY(EditAnywhere, Category = "Attack")
     FName SocketName = NAME_None;
 
     UPROPERTY(EditAnywhere, Category = "Attack")
     float Radius = 50.f;
 
-    // Notify°¡ ¹ß»ýÇÒ ¶§ È£Ãâ
+    // Notifyï¿½ï¿½ ï¿½ß»ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
     virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

@@ -5,10 +5,12 @@
 #include "GameFramework/Controller.h"
 #include "EnemyBaseAnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include <Kismet/GameplayStatics.h>
+#include "ExperienceComponent.h"
 
 
 // Sets default values
-ABaseEnemy::ABaseEnemy()
+ABaseEnemy::ABaseEnemy(const FObjectInitializer& ObjectInitializer)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -43,15 +45,24 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 }
 
 void ABaseEnemy::DieProcess() {
-	/*AController* Controller = GetController();
-	if (Controller) {
-		Controller->UnPossess();
-	}*/
-	//Controller Unpossess
-	//이부분 Controller를 못읽어서 컴파일 에러나는데 아시는분 있나요
+	if (GetCharacterMovement()) {
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
 
-	//Do something
-
-	SetLifeSpan(3.0f);
+	if (UWorld* World = GetWorld())
+	{
+		APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+		if (PlayerPawn)
+		{
+			if (UExperienceComponent* ExpComp = PlayerPawn->FindComponentByClass<UExperienceComponent>())
+			{
+				ExpComp->AddEXP(ExpReward);
+			}
+		}
+	}
 }
 
+void ABaseEnemy::DieProcessEnd() {
+	Destroy();
+}

@@ -3,89 +3,102 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HealthInterface.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Blueprint/UserWidget.h"
 #include "GEB_ProjectCharacter.generated.h"
 
+// ---------- Forward Declarations ----------
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class UWeaponComponent;
+
+class UWeaponComponent;        // ����
+class UExperienceComponent;    // ����ġ/����
+
+// UI
+class UUserWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UCLASS(config=Game)
-class AGEB_ProjectCharacter : public ACharacter
+UCLASS(config = Game)
+class GEB_PROJECT_API AGEB_ProjectCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
-	
-	/** MappingContext */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* DefaultMappingContext;
-
-	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* JumpAction;
-
-	/** Move Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* MoveAction;
-
-	/** Look Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* ShootAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* ReloadAction;
-	
-public:
-	UPROPERTY()
-	UWeaponComponent* WeaponComp;
-	
 public:
 	AGEB_ProjectCharacter();
-	
 
-protected:
-
-	/** Called for movement input */
-	void Move(const FInputActionValue& Value);
-
-	/** Called for looking input */
-	void Look(const FInputActionValue& Value);
-			
-
-protected:
-	// APawn interface
+	// AActor / APawn overrides
+	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
-	// To add mapping context
-	virtual void BeginPlay();
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-public:
+	// -------- Input handlers (public: Ű ���ε����� ���� ���) --------
+	void Cheat_AddExp50();   // I key
+	void ToggleSkillTree();  // Z key
+
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 protected:
-	// *** Shoot ***
+	// -------- Movement / Look --------
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+
+	// -------- Combat --------
 	void Shoot(const FInputActionValue& Value);
-
-	// *** Reload ***
 	void Reload(const FInputActionValue& Value);
-};
+	
+	// ---------- Components ----------
+	/** Camera boom positioning the camera behind the character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* CameraBoom = nullptr;
 
+	/** Follow camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FollowCamera = nullptr;
+
+	/** MappingContext & Input Actions (Enhanced Input) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputMappingContext* DefaultMappingContext = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* JumpAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* MoveAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* LookAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ShootAction = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction = nullptr;
+
+	// ---------- Gameplay ----------
+	/** ���� ������Ʈ(��Ÿ�ӿ� FindComponentByClass�� ĳ��) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UWeaponComponent* WeaponComp = nullptr;
+
+	/** EXP/Level component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UExperienceComponent* Experience = nullptr;
+
+	// ---------- UI ----------
+	/** �׻� ���̴� ���� HUD (����/����ġ ��) */
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> StatusWidgetClass;
+
+	UPROPERTY(Transient)
+	UUserWidget* StatusWidget = nullptr;
+
+
+};

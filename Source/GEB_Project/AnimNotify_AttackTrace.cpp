@@ -21,8 +21,8 @@ void UAnimNotify_AttackTrace::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
     UWorld* World = Owner->GetWorld();
     if (!World) return;
 
-    // AttackComponent°¡ ÀÖÀ¸¸é ±× ÄÄÆ÷³ÍÆ®ÀÇ attackRange¸¦ ¿ì¼± »ç¿ëÇÏ°í,
-    // ¾øÀ¸¸é Notify¿¡ ¼³Á¤µÈ Radius¸¦ »ç¿ëÇÑ´Ù.
+    // AttackComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ attackRangeï¿½ï¿½ ï¿½ì¼± ï¿½ï¿½ï¿½ï¿½Ï°ï¿½,
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Notifyï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Radiusï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
     float UseRadius = Radius;
     UAttackComponent* AC = Owner->FindComponentByClass<UAttackComponent>();
     if (AC)
@@ -33,13 +33,13 @@ void UAnimNotify_AttackTrace::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
     const FVector OwnerLocation = Owner->GetActorLocation();
     const FVector Center = OwnerLocation;
 
-    // ¿À¹ö·¦À¸·Î Pawn(ÇÇ°Ý´ë»ó) °Ë»ö
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Pawn(ï¿½Ç°Ý´ï¿½ï¿½) ï¿½Ë»ï¿½
     TArray<FOverlapResult> Overlaps;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(Owner);
 
     FCollisionObjectQueryParams ObjQuery;
-    ObjQuery.AddObjectTypesToQuery(ECC_Pawn); // Pawn Å¸ÀÔ¸¸ °Ë»ç
+    ObjQuery.AddObjectTypesToQuery(ECC_Pawn); // Pawn Å¸ï¿½Ô¸ï¿½ ï¿½Ë»ï¿½
 
     const FCollisionShape Sphere = FCollisionShape::MakeSphere(UseRadius);
 
@@ -52,15 +52,15 @@ void UAnimNotify_AttackTrace::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
             AActor* HitActor = Res.GetActor();
             if (!HitActor || HitActor == Owner) continue;
 
-            // ¾ÕÂÊ¸¸ Ã¼Å©: ¼ÒÀ¯ÀÚ Àü¹æ º¤ÅÍ¿Í ´ë»ó ¹æÇâÀÇ ³»ÀûÀÌ ¾ç¼öÀÌ¸é Àü¹æ ¹Ý±¸
+            // ï¿½ï¿½ï¿½Ê¸ï¿½ Ã¼Å©: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½
             const FVector ToHit = (HitActor->GetActorLocation() - OwnerLocation);
             if (ToHit.IsNearlyZero()) continue;
             const float Dot = FVector::DotProduct(Forward, ToHit.GetSafeNormal());
 
-            // Dot > 0 => Àü¹æ ¹Ý±¸¸¸ Çã¿ë. ÇÊ¿äÇÏ¸é 0.5f µîÀ¸·Î °¢µµ Á¦ÇÑ °¡´É.
+            // Dot > 0 => ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½. ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ 0.5f ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
             if (Dot <= 0.f) continue;
 
-            // AttackComponent°¡ ÀÖÀ¸¸é OnAttackHit È£Ãâ(ÄÄÆ÷³ÍÆ® ³»ºÎ¿¡¼­ Áßº¹ ¹æÁö/µ¥¹ÌÁö Ã³¸®)
+            // AttackComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ OnAttackHit È£ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½)
             if (AC)
             {
                 AC->OnAttackHit(HitActor);
@@ -69,9 +69,9 @@ void UAnimNotify_AttackTrace::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
     }
 
 #if ENABLE_DRAW_DEBUG
-    // µð¹ö±×¿ë: ¾×ÅÍ Áß½É¿¡ ±¸ Ç¥½Ã (¾ÕÂÊ¸¸ ½Ã°¢È­ÇÏ·Á¸é Ãß°¡ Ã³¸® ÇÊ¿ä)
+    // ï¿½ï¿½ï¿½ï¿½×¿ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ß½É¿ï¿½ ï¿½ï¿½ Ç¥ï¿½ï¿½ (ï¿½ï¿½ï¿½Ê¸ï¿½ ï¿½Ã°ï¿½È­ï¿½Ï·ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ Ã³ï¿½ï¿½ ï¿½Ê¿ï¿½)
     DrawDebugSphere(World, Center, UseRadius, 12, FColor::Red, false, 0.5f);
-    // Àü¹æ ¹æÇâ Ç¥½Ã
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
     DrawDebugDirectionalArrow(World, Center, Center + Owner->GetActorForwardVector().GetSafeNormal() * UseRadius, 20.f, FColor::Green, false, 0.5f, 0, 2.f);
 #endif
 }

@@ -4,12 +4,18 @@
 #include "GameFramework/Character.h"
 #include "EnemyBaseAnimInstance.h"
 #include "HealthInterface.h"
+#include "HealthComponent.h"
+#include "Engine/Engine.h"
+#include "GameFramework/Pawn.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/OverlapResult.h"
 
 // Sets default values for this component's properties
 UAttackComponent::UAttackComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
@@ -18,6 +24,8 @@ UAttackComponent::UAttackComponent()
 	attackRange = 300.f;
 	isCooldown = false;
 	coolTime = 0.f;
+	AttackCapsuleRadius = 20.f;
+	AttackCapsuleHalfHeight = 40.f;
 }
 
 
@@ -25,6 +33,47 @@ UAttackComponent::UAttackComponent()
 void UAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+	if (!MeshComp) return;
+
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	for (UCapsuleComponent* C : SocketCapsules)
+	{
+		if (C) C->DestroyComponent();
+	}
+	SocketCapsules.Empty();
+
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¸ï¿½ï¿½ï¿½ Ä¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½Îµï¿½
+	for (const FName& SocketName : AttackSocketNames)
+	{
+		if (SocketName == NAME_None) continue;
+		if (!MeshComp->DoesSocketExist(SocketName)) continue;
+
+		UCapsuleComponent* Capsule = NewObject<UCapsuleComponent>(Owner);
+		if (!Capsule) continue;
+
+		Capsule->RegisterComponent();
+		Capsule->AttachToComponent(MeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
+		Capsule->SetRelativeLocation(FVector::ZeroVector);
+		Capsule->SetCapsuleSize(AttackCapsuleRadius, AttackCapsuleHalfHeight);
+
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® È°ï¿½ï¿½È­: ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã³ï¿½ï¿½
+		Capsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		Capsule->SetCollisionObjectType(ECC_WorldDynamic);
+		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		Capsule->SetGenerateOverlapEvents(true);
+		Capsule->SetHiddenInGame(true);
+
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½
+		Capsule->OnComponentBeginOverlap.AddDynamic(this, &UAttackComponent::OnSocketOverlapBegin);
+
+		SocketCapsules.Add(Capsule);
+	}
 }
 
 
@@ -46,6 +95,26 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 			isCooldown = false;
 		}
 	}
+
+	// ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ È®ï¿½ï¿½ï¿½Ø¼ï¿½ Attack ï¿½ï¿½ï¿½Â°ï¿½ ï¿½Æ´Ï¸ï¿½ ï¿½Ö±ï¿½ ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
+	AActor* Owner = GetOwner();
+	if (Owner)
+	{
+		USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+		if (MeshComp)
+		{
+			if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
+			{
+				if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst))
+				{
+					if (EnemyAnimInst->State != EAnimState::Attack)
+					{
+						RecentlyHitActors.Empty();
+					}
+				}
+			}
+		}
+	}
 }
 
 void UAttackComponent::PerformAttack_Implementation() {
@@ -53,17 +122,16 @@ void UAttackComponent::PerformAttack_Implementation() {
 
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (!Owner) return;
-	//OwnerÀÇ °íÀ¯ °ø°Ý »ç¿ë, ¾Ö´Ï¸ÅÀÌ¼Ç, ÀÌÆåÆ® È£Ãâ
-	// ¾Ö´Ï¸ÅÀÌ¼Ç Notify¿¡¼­ ÇÇ°ÝÀ§Ä¡ °è»êÈÄ OnAttackHit È£Ãâ
+	//Ownerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½, ï¿½ï¿½ï¿½ï¿½Æ® È£ï¿½ï¿½
+	// ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ Notifyï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ OnAttackHit È£ï¿½ï¿½
+	//Ownerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½, ï¿½ï¿½ï¿½ï¿½Æ® È£ï¿½ï¿½
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
 	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
 		EnemyAnimInst->SetAnimStateAttack();
 	}
+	RecentlyHitActors.Empty();
 
-
-	/*AAIController* AIController = Cast<AAIController>(OwnerPawn->GetController());
-	if (!AIController) return;*/ //AI »óÅÂº¯È­ »ç¿ëÇÒ ÀÏ ÀÖÀ¸¸é »ç¿ë
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack!")); }
 
 	isCooldown = true;
@@ -80,9 +148,10 @@ float UAttackComponent::GetattackRange_Implementation() {
 
 void UAttackComponent::OnAttackHit(AActor* Target) {
 	if (!Target) { return; }
-	// Target HealthComponent ApplyDamage È£Ãâ µî
+	// Target HealthComponent ApplyDamage È£ï¿½ï¿½ ï¿½ï¿½
 	
-	// ¼ÒÀ¯ÀÚ¿Í ´ë»óÀÇ ÄÁÆ®·Ñ·¯¸¦ È®ÀÎÇÏ¿© ÇÃ·¹ÀÌ¾î¡êºñÇÃ·¹ÀÌ¾î(Enemy) °ü°è¸¸ Çã¿ë
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½(Enemy) ï¿½ï¿½ï¿½è¸¸ ï¿½ï¿½ï¿½
+
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	APawn* TargetPawn = Cast<APawn>(Target);
 
@@ -92,7 +161,8 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 	const bool OwnerIsPlayer = OwnerController ? OwnerController->IsPlayerController() : false;
 	const bool TargetIsPlayer = TargetController ? TargetController->IsPlayerController() : false;
 
-	// µ¿ÀÏ Áø¿µ(µÑ ´Ù ÇÃ·¹ÀÌ¾îÀÌ°Å³ª µÑ ´Ù ºñÇÃ·¹ÀÌ¾î)ÀÎ °æ¿ì ¹«½Ã
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½Ì°Å³ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½Ì°Å³ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ã·ï¿½ï¿½Ì¾ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (OwnerIsPlayer == TargetIsPlayer) {
 		if (GEngine) {
 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow,
@@ -106,7 +176,51 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 		UE_LOG(LogTemp, Log, TEXT("%s hit %s for %d"), *GetOwner()->GetName(), *Target->GetName(), damage);
 	}
 
-	if(Target->Implements<UHealthInterface>()) {
-		IHealthInterface::Execute_ApplyDamage(Target, damage);
+	if (UHealthComponent* HealthComp = Target->FindComponentByClass<UHealthComponent>()) {
+		HealthComp->ApplyDamage_Implementation(static_cast<float>(damage));
 	}
+}
+
+// ï¿½ï¿½ï¿½ï¿½ Ä¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ý¹ï¿½: ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ Attack ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ Ã³ï¿½ï¿½
+void UAttackComponent::OnSocketOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor) return;
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+	if (OtherActor == Owner) return;
+
+	// ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½Î½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½
+	USkeletalMeshComponent* MeshComp = Owner->FindComponentByClass<USkeletalMeshComponent>();
+	if (!MeshComp) return;
+	UAnimInstance* AnimInst = MeshComp->GetAnimInstance();
+	if (!AnimInst) return;
+	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst);
+	if (!EnemyAnimInst) return;
+
+	// Attack ï¿½ï¿½ï¿½Â°ï¿½ ï¿½Æ´Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½
+	if (EnemyAnimInst->State != EAnimState::Attack) return;
+
+	// ï¿½ßºï¿½ ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½: ï¿½Ì¹ï¿½ ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½
+	if (RecentlyHitActors.Contains(OtherActor)) return;
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Ä¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+	const FVector Center = OverlappedComp->GetComponentLocation();
+	const FVector Forward = Owner->GetActorForwardVector().GetSafeNormal();
+	const FVector ToHit = (OtherActor->GetActorLocation() - Center);
+	if (ToHit.IsNearlyZero()) return;
+	const float Dot = FVector::DotProduct(Forward, ToHit.GetSafeNormal());
+	if (Dot <= 0.f) return;
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ® Ã³ï¿½ï¿½
+	OnAttackHit(OtherActor);
+	RecentlyHitActors.Add(OtherActor);
+
+#if ENABLE_DRAW_DEBUG
+	// ï¿½Ã°ï¿½È­: ï¿½ï¿½Æ® ï¿½ß»ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
+	if (UWorld* World = Owner->GetWorld())
+	{
+		DrawDebugSphere(World, OtherActor->GetActorLocation(), 8.f, 6, FColor::Yellow, false, 0.5f);
+	}
+#endif
 }
