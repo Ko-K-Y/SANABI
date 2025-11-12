@@ -10,7 +10,9 @@ UEnemyMoveComponent::UEnemyMoveComponent()
 	// turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
+	traceRange = 1000.f;
+	movementSpeed = 600.f;
+	jumpSpeed = 100.f;
 	// ...
 	traceRange = 1000.f;
 	movementSpeed = 600.f;
@@ -24,7 +26,6 @@ void UEnemyMoveComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-
 }
 
 
