@@ -13,6 +13,7 @@
 UBTT_DashAttack::UBTT_DashAttack()
 {
 	bNotifyTick = true;  // TickTask 활성화
+	bCreateNodeInstance = true;
 
 	damage = 1;
 	maxAttackCoolTime = 2.f;
