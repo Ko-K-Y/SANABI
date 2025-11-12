@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BaseEnemy.h"
+#include "ShooterAttackComponent.h"
 #include "ShooterEnemy.generated.h"
 
 /**
@@ -15,14 +16,12 @@ class GEB_PROJECT_API AShooterEnemy : public ABaseEnemy
 	GENERATED_BODY()
 
 public:
-	AShooterEnemy();
-
+	AShooterEnemy(const FObjectInitializer& ObjectInitializer);
+	virtual void Tick(float DeltaTime) override;
+	
 protected:
-	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	// class UProjectileAttackComponent* ProjectileAttackComponent;
-
-	// UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	// TSubclassOf<class AProjectile> ProjectileClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UShooterAttackComponent* ShooterAttackComp;
 
 	virtual void BeginPlay() override;
 
