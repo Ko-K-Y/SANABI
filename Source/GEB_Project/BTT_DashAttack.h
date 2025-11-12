@@ -19,8 +19,26 @@ class GEB_PROJECT_API UBTT_DashAttack : public UBTTaskNode
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
 	UAnimMontage* DashMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackboard")
+	FBlackboardKeySelector TargetKey;
 	
 	UBTT_DashAttack();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
+	int32 damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
+	float maxAttackCoolTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
+	float attackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
+	bool isCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
+	float coolTime;
 	
 protected:
 	// Call when Task Start
@@ -29,6 +47,7 @@ protected:
 	// Task가 완료될 때까지 실행되는 틱 함수
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
+	
 private:
 	FVector StartLocation; // Boss Location
 	FVector TargetLocation; // Player Location
@@ -44,4 +63,8 @@ private:
 	bool bMontagePlayed;
 protected:
 	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
+
+public:
+	bool GetisCoolDown();
+	float GetattackRange();
 };

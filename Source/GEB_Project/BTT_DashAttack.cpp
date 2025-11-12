@@ -3,6 +3,7 @@
 
 #include "BTT_DashAttack.h"
 #include "AIController.h"
+#include "SWarningOrErrorBox.h"
 #include "GameFramework/Pawn.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,10 +13,17 @@
 UBTT_DashAttack::UBTT_DashAttack()
 {
 	bNotifyTick = true;  // TickTask 활성화
+
+	damage = 1;
+	maxAttackCoolTime = 2.f;
+	attackRange = 1500.f;
+	isCooldown = false;
+	coolTime = 0.f;
 }
 
 EBTNodeResult::Type UBTT_DashAttack::ExcuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	UE_LOG(LogTemp, Warning, TEXT("DashAttackExcuteTask1"));
 	AIController = OwnerComp.GetAIOwner();
 	if (!AIController)
 		return EBTNodeResult::Failed;
@@ -23,6 +31,8 @@ EBTNodeResult::Type UBTT_DashAttack::ExcuteTask(UBehaviorTreeComponent& OwnerCom
 	AIPawn = AIController->GetPawn();
 	if (!AIPawn)
 		return EBTNodeResult::Failed;
+
+	UE_LOG(LogTemp, Warning, TEXT("DashAttack ExcuteTask2"));
 	
 	// AIPawn이 ACharacter인지 확인하고 Movement Component를 가져옵니다.
 	ACharacter* OwnerChar = Cast<ACharacter>(AIPawn);
@@ -35,9 +45,11 @@ EBTNodeResult::Type UBTT_DashAttack::ExcuteTask(UBehaviorTreeComponent& OwnerCom
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (!BlackboardComp)
 		return EBTNodeResult::Failed;
-	
-	// 블랙보드에서 플레이어 위치 읽기 (예: "PlayerLocation"이라는 키)
-	TargetLocation = BlackboardComp->GetValueAsVector("Target");
+	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
+	if (!TargetActor) return EBTNodeResult::Failed;
+
+	// 액터의 현재 위치를 가져옵니다.
+	TargetLocation = TargetActor->GetActorLocation();
 	StartLocation = AIPawn->GetActorLocation();
 
 	
@@ -45,7 +57,6 @@ EBTNodeResult::Type UBTT_DashAttack::ExcuteTask(UBehaviorTreeComponent& OwnerCom
 	bMontagePlayed = false;  // 몽타주 재생 플래그 초기화
 
 	// 충돌체, 무브먼트 컴포넌트 등 준비 (필요시)
-
 	return EBTNodeResult::InProgress;  
 }
 
@@ -64,8 +75,9 @@ void UBTT_DashAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMem
 
 void UBTT_DashAttack::PerformDash(float DeltaTime)
 {
-	if (!AIPawn) return;
+	if (!AIPawn || isCooldown) return;
 
+	UE_LOG(LogTemp, Warning, TEXT("PerformDash"))
 	// *** Dash Anim Montage 재생
 	if (DashMontage && bIsDashing && !bMontagePlayed) 
 	{
@@ -99,6 +111,9 @@ void UBTT_DashAttack::PerformDash(float DeltaTime)
 		
 		// *** 데미지 처리 등 추가 로직
 
+		// 쿨다운 시작
+		isCooldown = true;
+		coolTime = maxAttackCoolTime;
 
 		// 이동 컴포넌트를 다시 활성화 (예: 걷기)
 		ACharacter* OwnerChar = Cast<ACharacter>(AIPawn);
@@ -135,4 +150,16 @@ void UBTT_DashAttack::PlayMontage(UAnimMontage* Montage, float PlaySpeed)
 	{
 		AnimInstance->Montage_Play(Montage, PlaySpeed);
 	}
+}
+
+bool UBTT_DashAttack::GetisCoolDown()
+{
+	return isCooldown;
+
+}
+
+float UBTT_DashAttack::GetattackRange()
+{
+	return attackRange;
+
 }
