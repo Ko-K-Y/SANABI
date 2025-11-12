@@ -7,12 +7,13 @@
 #include "EnemyMoveComponent.h"
 #include "Attack.h"
 #include "EnemyMove.h"
+#include "EnemyBaseAnimInstance.h"
 
 UBTService_UpdateTargetDistance::UBTService_UpdateTargetDistance()
 {
     NodeName = TEXT("Update Target Distance");
-    // ±âº» °»½Å ÁÖ±â (¿¡µðÅÍ¿¡¼­ Service ³ëµåÀÇ Interval·Î Á¶Á¤ °¡´É)
-    Interval = 0.2f;
+    // ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½Ö±ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ Service ï¿½ï¿½ï¿½ï¿½ï¿½ Intervalï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+    Interval = 0.01f;
 }
 
 void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
@@ -23,46 +24,59 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     AAIController* AICont = OwnerComp.GetAIOwner();
     if (!BlackboardComp || !AICont) return;
 
-    // Å° ÀÌ¸§: ¿¡µðÅÍ¿¡¼­ ¹ÙÀÎµùµÈ Å°°¡ ÀÖÀ¸¸é »ç¿ë, ¾øÀ¸¸é ±âÁ¸ ¹®ÀÚ¿­ Å° »ç¿ë
+    // Å° ï¿½Ì¸ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ Å° ï¿½ï¿½ï¿½
     const FName TargetKeyName = TargetKey.SelectedKeyName.IsNone() ? FName(TEXT("Target")) : TargetKey.SelectedKeyName;
     const FName AttackKeyName = IsInAttackRangeKey.SelectedKeyName.IsNone() ? FName(TEXT("IsInAttackRange")) : IsInAttackRangeKey.SelectedKeyName;
     const FName TraceKeyName = IsInTraceRangeKey.SelectedKeyName.IsNone() ? FName(TEXT("IsInTraceRange")) : IsInTraceRangeKey.SelectedKeyName;
     const FName CanAttackKeyName = CanAttackKey.SelectedKeyName.IsNone() ? FName(TEXT("CanAttack")) : CanAttackKey.SelectedKeyName;
+    const FName Distance_MoveKeyName = Distance_MoveKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_MoveKey.SelectedKeyName;
+    const FName Distance_AttackKeyName = Distance_AttackKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_AttackKey.SelectedKeyName;
+    const FName Distance_PunchKeyName = Distance_PunchKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_PunchKey.SelectedKeyName;
+
 
     AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKeyName));
     APawn* ControlledPawn = AICont->GetPawn();
     if (!TargetActor || !ControlledPawn) {
-        // ´ë»óÀÌ ¾øÀ¸¸é ÇÃ·¡±× false·Î ¼³Á¤
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ falseï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         BlackboardComp->SetValueAsBool(AttackKeyName, false);
         BlackboardComp->SetValueAsBool(TraceKeyName, false);
         BlackboardComp->SetValueAsBool(CanAttackKeyName, false);
+        BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // ì´ë™ ì¡°ê±´
+        BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // ê³µê²© ì„ íƒ ì¡°ê±´
+        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // íŽ€ì¹˜ ê³µê²© ì¡°ê±´
         return;
     }
 
-    // ÄÄÆ÷³ÍÆ® È¹µæ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® È¹ï¿½ï¿½
     UAttackComponent* AttackComp = ControlledPawn->FindComponentByClass<UAttackComponent>();
     UEnemyMoveComponent* MoveComp = ControlledPawn->FindComponentByClass<UEnemyMoveComponent>();
     if (!AttackComp || !MoveComp) {
         BlackboardComp->SetValueAsBool(AttackKeyName, false);
         BlackboardComp->SetValueAsBool(TraceKeyName, false);
         BlackboardComp->SetValueAsBool(CanAttackKeyName, false);
+        BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // ì´ë™ ì¡°ê±´
+        BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // ê³µê²© ì„ íƒ ì¡°ê±´
+        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // íŽ€ì¹˜ ê³µê²© ì¡°ê±´
         return;
     }
 
     const float Distance = FVector::Dist(TargetActor->GetActorLocation(), ControlledPawn->GetActorLocation());
 
-    // ÀÎÅÍÆäÀÌ½º È£Ãâ·Î ¹üÀ§ ¾ò±â
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½ È£ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     const float AttackRange = IAttack::Execute_GetattackRange(AttackComp);
     const float TraceRange = IEnemyMove::Execute_GettraceRange(MoveComp);
 
     const bool bInAttackRange = Distance <= AttackRange;
-    const bool bInTraceRange = Distance >= AttackRange && Distance <= TraceRange;
+    const bool bInTraceRange = Distance <= TraceRange;
 
-    // Äð´Ù¿î È®ÀÎ: IAttackÀÇ GetisCoolDown »ç¿ë (true¸é Äð´Ù¿î Áß)
+    // ï¿½ï¿½Ù¿ï¿½ È®ï¿½ï¿½: IAttackï¿½ï¿½ GetisCoolDown ï¿½ï¿½ï¿½ (trueï¿½ï¿½ ï¿½ï¿½Ù¿ï¿½ ï¿½ï¿½)
     const bool bIsCooldown = IAttack::Execute_GetisCoolDown(AttackComp);
     const bool bCanAttack = (!bIsCooldown) && bInAttackRange;
 
     BlackboardComp->SetValueAsBool(AttackKeyName, bInAttackRange);
     BlackboardComp->SetValueAsBool(TraceKeyName, bInTraceRange);
     BlackboardComp->SetValueAsBool(CanAttackKeyName, bCanAttack);
+    BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // ì´ë™ ì¡°ê±´
+    BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // ê³µê²© ì„ íƒ ì¡°ê±´
+    BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // íŽ€ì¹˜ ê³µê²© ì¡°ê±´
 }

@@ -15,7 +15,7 @@ public:
 protected:
     virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
-    // Blackboard key selectors (¿¬°áÇÏÁö ¾ÊÀ¸¸é ±âº» ¹®ÀÚ¿­ Å° »ç¿ë)
+    // Blackboard key selectors (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½Ú¿ï¿½ Å° ï¿½ï¿½ï¿½)
     UPROPERTY(EditAnywhere, Category = "Blackboard")
     FBlackboardKeySelector TargetKey;
 
@@ -27,4 +27,15 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Blackboard")
     FBlackboardKeySelector CanAttackKey;
+    
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector Distance_MoveKey;
+
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector Distance_AttackKey;
+
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector Distance_PunchKey;
+
+    
 };

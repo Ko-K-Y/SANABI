@@ -2,11 +2,30 @@
 
 
 #include "ShooterEnemy.h"
+#include "EnemyBaseAnimInstance.h"
+#include "ShooterAttackComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
-AShooterEnemy::AShooterEnemy()
+AShooterEnemy::AShooterEnemy(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UShooterAttackComponent>(TEXT("AttackComponent")))
 {
-	
+	PrimaryActorTick.bCanEverTick = true;
+    
+	// 이제 AttackComp는 UShooterAttackComponent 타입으로 생성됨
+	// 필요시 ShooterAttackComponent로 캐스팅해서 사용
+	ShooterAttackComp = Cast<UShooterAttackComponent>(AttackComp);
+	if (!ShooterAttackComp) UE_LOG(LogTemp, Error, TEXT("ShooterAttackComp Cast Failed."))
+}
+
+void AShooterEnemy::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
+	if (animInst) {
+		animInst->Speed = GetCharacterMovement()->Velocity.Size2D();
+	}
 }
 
 void AShooterEnemy::BeginPlay()
@@ -17,6 +36,6 @@ void AShooterEnemy::BeginPlay()
 
 void AShooterEnemy::Attack()
 {
-	// ABaseEnemy에 AttackComponent를 포인터형 변수 AttackComp로 정의해놓았음.
-	// AttackComp->FunctionName() 형식으로 사용할 것.
+	// ShooterAttackComp->FunctionName() 형식으로 사용
+	ShooterAttackComp->PerformAttack();
 }
