@@ -8,6 +8,7 @@
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
 #include "BaseEnemy.h"
+#include "StateInterface.h"
 
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
@@ -71,7 +72,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 		}
 
 		PlayerState->bIsAttacked = true;
-		PlayerState->Invincibility();
+		IStateInterface::Execute_Invincibility(PlayerState);
 		if (CurrentHealth > 0) CurrentHealth -= Damage;
 	}
 	// 공통 로직
