@@ -4,6 +4,11 @@
 #include "WeaponComponent.h"
 #include "HealthComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/GameViewportClient.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
@@ -89,7 +94,7 @@ void UWeaponComponent::Fire()
 		if (bHit) TargetPoint = CameraTraceResult.ImpactPoint; // 목표 지점 저장 (카메라 트레이스가 맞춘 지점)
 		else TargetPoint = TraceEnd; // 맞은 곳이 없으면, 카메라 트레이스의 끝 지점을 목표로 설정
 
-		DrawDebugLine(
+		/*DrawDebugLine(
 			GetWorld(),
 			WorldLocation, // 카메라 시작점
 			TargetPoint,   // 목표 지점
@@ -98,7 +103,7 @@ void UWeaponComponent::Fire()
 			3.0f,
 			0,
 			3.0f
-		);
+		);*/
 		
 		// *** 2. 저장된 TargetPoint로 부터 Muzzle의 위치까지 line trace
 		FHitResult MuzzleTraceResult;
@@ -119,13 +124,24 @@ void UWeaponComponent::Fire()
 		{
 			// Muzzle 위치
 			FVector MuzzleLocation = MuzzleComponent->GetComponentLocation();
+			FRotator RelativeCorrection = FRotator(0.f, -90.f, 0.f);
+
+			// 1. 머즐 플래시(총구 화염) 스폰 ---
+			if (MuzzleFlashEffect)
+			{
+				UGameplayStatics::SpawnEmitterAttached(
+					MuzzleFlashEffect, // 스폰할 파티클
+					MuzzleComponent,   // 부착할 컴포넌트 (총구)
+					FName("Muzzle_01"),// 부착할 소켓 이름 (없으면 None)
+					FVector(0.f),      // 상대 위치
+					RelativeCorrection,
+					EAttachLocation::SnapToTarget, // 위치 타입
+					true               // 자동 파괴
+				);
+			}
     
 			// Muzzle 트레이스
-			FCollisionQueryParams MuzzleParams; // <--- 새로운 변수 선언
-			MuzzleParams.AddIgnoredActor(GetOwner());
-			// 복잡한 충돌체(Mesh)까지 정확히 검사하도록 설정
-			MuzzleParams.bTraceComplex = true;
-			
+			Params.AddIgnoredActor(GetOwner()); 
 			// 총이나 총구 이펙트가 트레이스에 걸리는 것을 방지하기 위해 무기 액터도 무시해야하면 생성자에 WeaponActor 추가해서 무시해주기
 			// Params.AddIgnoredActor(WeaponActor); 
 
@@ -134,10 +150,10 @@ void UWeaponComponent::Fire()
 				MuzzleLocation, // 총구 시작 위치
 				TargetPoint,    // 1단계에서 찾은 최종 목표 지점
 				ECollisionChannel::ECC_Pawn,
-				MuzzleParams
+				Params
 			);
 			
-			DrawDebugLine(
+			/*DrawDebugLine(
 				GetWorld(),
 				MuzzleLocation,
 				TargetPoint,
@@ -146,12 +162,53 @@ void UWeaponComponent::Fire()
 				3.0f,       // 3초 동안 표시합니다.
 				0,
 				3.0f        // 라인 두께
-			);
+			);*/
 			
-			// 데미지 적용
-			AActor* HitActor = MuzzleTraceResult.GetActor();
+			// <--- 트레이서의 "끝점"을 정의 ---
+			FVector TraceEndLocation;
 			if (bHitFinal)
 			{
+				TraceEndLocation = MuzzleTraceResult.ImpactPoint; // 맞았다면 맞은 지점
+			}
+			else
+			{
+				TraceEndLocation = TargetPoint; // 못 맞췄다면 조준한 지점 (허공)
+			}
+
+			// 2. 빔 트레이서(총알 궤적) 스폰 ---
+			if (TracerEffect)
+			{
+				UParticleSystemComponent* BeamComponent = UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					TracerEffect,
+					MuzzleLocation,
+					FRotator::ZeroRotator,
+					true
+				);
+
+				if (BeamComponent)
+				{
+					// "Target" 파라미터에 끝점 좌표를 설정
+					BeamComponent->SetVectorParameter(FName("Target"), TraceEndLocation);
+				}
+			}
+
+			// 3. 데미지 적용 및 피격 이펙트 스폰 ---
+			if (bHitFinal)
+			{
+				// <--- 피격(Impact) 이펙트 스폰 ---
+				if (HitImpactEffect)
+				{
+					UGameplayStatics::SpawnEmitterAtLocation(
+						GetWorld(),
+						HitImpactEffect,
+						MuzzleTraceResult.ImpactPoint, // 맞은 위치
+						MuzzleTraceResult.ImpactNormal.Rotation() // 맞은 표면의 법선 방향
+					);
+				}
+
+				// <--- 데미지 적용 (기존과 동일) ---
+				AActor* HitActor = MuzzleTraceResult.GetActor();
 				UE_LOG(LogTemp, Warning, TEXT("HIT!"));
 				// MuzzleTraceResult.GetActor()를 통해 맞은 대상에 데미지 적용
 				// UGameplayStatics::ApplyDamage 등을 사용할 수 있습니다.

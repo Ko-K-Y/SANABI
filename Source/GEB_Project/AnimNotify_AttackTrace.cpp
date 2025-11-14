@@ -21,12 +21,58 @@ void UAnimNotify_AttackTrace::Notify(USkeletalMeshComponent* MeshComp, UAnimSequ
     UWorld* World = Owner->GetWorld();
     if (!World) return;
 
+    // AttackComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ attackRangeï¿½ï¿½ ï¿½ì¼± ï¿½ï¿½ï¿½ï¿½Ï°ï¿½,
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Notifyï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Radiusï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+    float UseRadius = Radius;
     UAttackComponent* AC = Owner->FindComponentByClass<UAttackComponent>();
-
-    // AttackComponent¿¡ ¼ÒÄÏ Ä¸½¶À» »ý¼ºÇØµÎ¾ú´Ù¸é ±×ÂÊ¿¡¼­ °Ë»çÇÏµµ·Ï À§ÀÓ
-    if (AC && AC->AttackSocketNames.Num() > 0)
+    if (AC)
     {
-        return;
+        UseRadius = IAttack::Execute_GetattackRange(AC) / 2;
     }
+
+    const FVector OwnerLocation = Owner->GetActorLocation();
+    const FVector Center = OwnerLocation;
+
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Pawn(ï¿½Ç°Ý´ï¿½ï¿½) ï¿½Ë»ï¿½
+    TArray<FOverlapResult> Overlaps;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(Owner);
+
+    FCollisionObjectQueryParams ObjQuery;
+    ObjQuery.AddObjectTypesToQuery(ECC_Pawn); // Pawn Å¸ï¿½Ô¸ï¿½ ï¿½Ë»ï¿½
+
+    const FCollisionShape Sphere = FCollisionShape::MakeSphere(UseRadius);
+
+    if (World->OverlapMultiByObjectType(Overlaps, Center, FQuat::Identity, ObjQuery, Sphere, Params))
+    {
+        const FVector Forward = Owner->GetActorForwardVector().GetSafeNormal();
+
+        for (const FOverlapResult& Res : Overlaps)
+        {
+            AActor* HitActor = Res.GetActor();
+            if (!HitActor || HitActor == Owner) continue;
+
+            // ï¿½ï¿½ï¿½Ê¸ï¿½ Ã¼Å©: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½
+            const FVector ToHit = (HitActor->GetActorLocation() - OwnerLocation);
+            if (ToHit.IsNearlyZero()) continue;
+            const float Dot = FVector::DotProduct(Forward, ToHit.GetSafeNormal());
+
+            // Dot > 0 => ï¿½ï¿½ï¿½ï¿½ ï¿½Ý±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½. ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ 0.5f ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+            if (Dot <= 0.f) continue;
+
+            // AttackComponentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ OnAttackHit È£ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½)
+            if (AC)
+            {
+                AC->OnAttackHit(HitActor);
+            }
+        }
+    }
+
+#if ENABLE_DRAW_DEBUG
+    // ï¿½ï¿½ï¿½ï¿½×¿ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ß½É¿ï¿½ ï¿½ï¿½ Ç¥ï¿½ï¿½ (ï¿½ï¿½ï¿½Ê¸ï¿½ ï¿½Ã°ï¿½È­ï¿½Ï·ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ Ã³ï¿½ï¿½ ï¿½Ê¿ï¿½)
+    DrawDebugSphere(World, Center, UseRadius, 12, FColor::Red, false, 0.5f);
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ç¥ï¿½ï¿½
+    DrawDebugDirectionalArrow(World, Center, Center + Owner->GetActorForwardVector().GetSafeNormal() * UseRadius, 20.f, FColor::Green, false, 0.5f, 0, 2.f);
+#endif
 }
 
