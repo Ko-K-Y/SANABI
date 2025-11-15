@@ -123,6 +123,8 @@ void UAttackComponent::PerformAttack_Implementation() {
 	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (!Owner) return;
 	//Owner�� ���� ���� ���, �ִϸ��̼�, ����Ʈ ȣ��
+	// �ִϸ��̼� Notify���� �ǰ���ġ ����� OnAttackHit ȣ��
+	//Owner�� ���� ���� ���, �ִϸ��̼�, ����Ʈ ȣ��
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
 	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
@@ -146,6 +148,9 @@ float UAttackComponent::GetattackRange_Implementation() {
 
 void UAttackComponent::OnAttackHit(AActor* Target) {
 	if (!Target) { return; }
+	// Target HealthComponent ApplyDamage ȣ�� ��
+	
+	// �����ڿ� ����� ��Ʈ�ѷ��� Ȯ���Ͽ� �÷��̾����÷��̾�(Enemy) ���踸 ���
 
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	APawn* TargetPawn = Cast<APawn>(Target);
@@ -156,6 +161,7 @@ void UAttackComponent::OnAttackHit(AActor* Target) {
 	const bool OwnerIsPlayer = OwnerController ? OwnerController->IsPlayerController() : false;
 	const bool TargetIsPlayer = TargetController ? TargetController->IsPlayerController() : false;
 
+	// ���� ����(�� �� �÷��̾��̰ų� �� �� ���÷��̾�)�� ��� ����
 	// ���� ����(�� �� �÷��̾��̰ų� �� �� ���÷��̾�)�� ��� ����
 	if (OwnerIsPlayer == TargetIsPlayer) {
 		if (GEngine) {
