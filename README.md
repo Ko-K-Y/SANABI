@@ -14,3 +14,65 @@
   - 모든 기능 개발은 이 브랜치에서 이루어집니다.
   - 이 브랜치는 Develop Branch를 베이스로 합니다.
   - ex) branch_KKY
+
+### 파일 구조
+  Content
+  ├───__ExternalActors__
+  │   ├───Map
+  │   ├───Stage
+  │   └───ThirdPerson
+  ├───__ExternalObjects__
+  │   ├───Map
+  │   ├───Stage
+  │   └───ThirdPerson
+  ├───Characters
+  │   ├───Mannequin_UE4
+  │   └───Mannequins
+  ├───Collections
+  ├───Developers
+  │   ├───leetm
+  │   └───young
+  ├───Enemy
+  │   ├───AI
+  │   ├───Anim
+  │   ├───BP
+  │   └───BP_TankEnemy.uasset
+  ├───LevelPrototyping
+  │   ├───Materials
+  │   ├───Meshes
+  │   └───Textures
+  ├───Map_LeeYH
+  │   ├───Basic_VFX
+  │   ├───CyberpunkIndustries
+  │   ├───dieselpunk
+  │   ├───Env_SciFi
+  │   ├───GoodSky
+  │   ├───HandMade
+  │   ├───Map
+  │   ├───SoulCity
+  │   ├───BP_MapGameMode.uasset
+  │   ├───BP_SavePointTrigger.uasset
+  │   ├───BP_SpawnPointGameInstance.uasset
+  │   └───TestGameMode.uasset
+  ├───ParagonMinions
+  │   └───ParagonMinions
+  ├───ParagonSteel
+  │   └───ParagonSteel
+  ├───ParagonWraith
+  │   ├───Audio
+  │   ├───Characters
+  │   └───FX
+  ├───RadicalMike
+  │   └───RadicalMike
+  ├───Sinhyeok
+  │   ├───GrapplingHook
+  │   └───Player
+  ├───ThirdPerson
+  │   ├───Blueprints
+  │   ├───Input
+  │   └───Maps
+  └───UI
+      ├───—Pngtree—black_paint_brush_stroke_collection_20263711.uasset
+      ├───ddd-removebg-preview.uasset
+      ├───WBP_PlayerUI.uasset
+      └───WBP_StatusHUD.uasset
