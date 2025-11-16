@@ -1,5 +1,4 @@
 {
-<<<<<<<<< Temporary merge branch 1
   "FileVersion": 3,
   "EngineAssociation": "5.4",
   "Category": "",
@@ -11,7 +10,8 @@
       "LoadingPhase": "Default",
       "AdditionalDependencies": [
         "Engine",
-        "AIModule"
+        "AIModule",
+        "UMGEditor"
       ]
     }
   ],
@@ -37,32 +37,3 @@
     }
   ]
 }
-=========
-	"FileVersion": 3,
-	"EngineAssociation": "5.4",
-	"Category": "",
-	"Description": "",
-	"Modules": [
-		{
-			"Name": "GEB_Project",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
-				"UMG"
-				"AIModule",
-                "UMGEditor"
-			]
-		}
-	],
-	"Plugins": [
-		{
-			"Name": "ModelingToolsEditorMode",
-			"Enabled": true,
-			"TargetAllowList": [
-				"Editor"
-			]
-		}
-	]
-}
->>>>>>>>> Temporary merge branch 2

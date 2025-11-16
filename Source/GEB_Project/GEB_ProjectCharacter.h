@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "HealthInterface.h"
 #include "GEB_ProjectCharacter.generated.h"
 
 // ---------- Forward Declarations ----------
@@ -15,10 +16,13 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class UWeaponComponent;        // 무기
-class UExperienceComponent;    // 경험치/레벨
+class UWeaponComponent;        // ����
+class UExperienceComponent;    // ����ġ/����
 class UHealthComponent;
 class UWBP_StatusHUD;
+
+class UWeaponComponent;        // ����
+class UExperienceComponent;    // ����ġ/����
 
 // UI
 class UUserWidget;
@@ -38,9 +42,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: 키 바인딩에서 직접 사용) --------
+	// -------- Input handlers (public: Ű ���ε����� ���� ���? --------
 	void Cheat_AddExp50();   // I key
-	void ToggleSkillTree();  // Z key
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -88,7 +91,7 @@ protected:
 	UInputAction* ReloadAction = nullptr;
 
 	// ---------- Gameplay ----------
-	/** 무기 컴포넌트(런타임에 FindComponentByClass로 캐시) */
+	/** ���� ������Ʈ(��Ÿ�ӿ� FindComponentByClass�� ĳ��) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponComponent* WeaponComp = nullptr;
 
@@ -97,7 +100,7 @@ protected:
 	UExperienceComponent* Experience = nullptr;
 
 	// ---------- UI ----------
-	/** 항상 보이는 상태 HUD (레벨/경험치 등) */
+	/** �׻� ���̴� ���� HUD (����/����ġ ��) */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StatusWidgetClass;
 

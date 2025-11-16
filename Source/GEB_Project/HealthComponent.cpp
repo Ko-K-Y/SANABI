@@ -1,6 +1,5 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "HealthComponent.h"
 #include "GEB_ProjectCharacter.h"
 #include "PlayerStateComponent.h"
@@ -8,21 +7,17 @@
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+// 필요 없다면 아래 둘은 지워도 OK
 #include "BaseEnemy.h"
 #include "StateInterface.h"
 
-// Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 	MaxHealth = FMath::Clamp(MaxHealth, 1, MaxLimit); // 기본 3, 한도 5
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
 }
 
-
-// Called when the game starts
 void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -34,15 +29,15 @@ void UHealthComponent::BeginPlay()
 void UHealthComponent::Broadcast()
 {
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
-	if (CurrentHealth <= 0) { OnDeath.Broadcast(); }
+	if (CurrentHealth <= 0)
+	{
+		OnDeath.Broadcast();
+	}
 }
 
-// Called every frame
 void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 int UHealthComponent::GetCurrentHealth_Implementation()
@@ -57,75 +52,88 @@ int UHealthComponent::GetMaxHealth_Implementation()
 
 void UHealthComponent::ApplyDamage_Implementation(float Damage)
 {
-    if (Damage <= 0.f || CurrentHealth <= 0) return;
+	if (Damage <= 0.f || CurrentHealth <= 0) return;
 
-    AActor* Owner = GetOwner();
-    const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1, 정수화
-	AActor* Owner = GetOwner();
-	if (!Owner) return;
+	AActor* Owner = GetOwner();                             
+	const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1로 정수화
 
-	// 플레이어라면: 피격 상태면 데미지 무시, 아니면 적용
-	if (Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
+	// 플레이어인 경우: 무적/쉴드 처리
+	if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
 	{
-		UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>();
-		if (PlayerState->bIsAttacked)
+		if (UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Player Attacked"))
+			if (PlayerState->bIsAttacked)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Player Invincible - damage ignored"));
 				return;
+			}
+
+			// 쉴드가 켜져 있으면 먼저 쉴드에 적용
+			if (UShieldComponent* ShieldComp = Owner->FindComponentByClass<UShieldComponent>())
+			{
+				if (IShieldInterface::Execute_IsShieldActive(ShieldComp))
+				{
+					// 팀 정책에 따라: 반환값을 '남은 데미지'로 쓰도록 합의했다면 그걸 체력에 반영
+					const int32 RemainingDamage =
+						IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, (float)IntDamage);
+
+					// 남은 데미지가 없으면 체력은 깎지 않고 무적/피격 처리만
+					if (RemainingDamage <= 0)
+					{
+						PlayerState->bIsAttacked = true;
+						PlayerState->Invincibility();
+						Broadcast(); // UI는 갱신(무적/피격 반응을 위해)
+						UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (shield absorbed)"), CurrentHealth, MaxHealth);
+						return;
+					}
+
+					// 남은 데미지가 있으면 그 값을 적용
+					CurrentHealth = FMath::Clamp(CurrentHealth - RemainingDamage, 0, MaxHealth);
+				}
+				else
+				{
+					// 쉴드 비활성: 일반 적용
+					CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+				}
+			}
+			else
+			{
+				// 쉴드 컴포넌트 없음: 일반 적용
+				CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+			}
+
+			// 피격 처리(무적 시작)
+			PlayerState->bIsAttacked = true;
+			PlayerState->Invincibility();
 		}
-    // 플레이어인 경우: 무적/쉴드 체크
-    if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
-    {
-        // PlayerState 널체크
-        if (UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>())
-        {
-            if (PlayerState->bIsAttacked)
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Player Invincible - damage ignored"));
-                return;
-            }
+		else
+		{
+			// PlayerState가 없으면 그냥 적용
+			CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+		}
+	}
+	else
+	{
+		// 적/기타 액터: 피격 애니 트리거 후 적용
+		if (Owner)
+		{
+			if (USkeletalMeshComponent* Skel = Owner->FindComponentByClass<USkeletalMeshComponent>())
+			{
+				if (UAnimInstance* Anim = Skel->GetAnimInstance())
+				{
+					if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Anim))
+					{
+						EnemyAnimInst->State = EAnimState::Hit;
+					}
+				}
+			}
+		}
 
-            // 실드 활성 시 실드에 먼저 적용 (필요 시 로직 보강)
-            if (UShieldComponent* ShieldComp = Owner->FindComponentByClass<UShieldComponent>())
-            {
-                if (IShieldInterface::Execute_IsShieldActive(ShieldComp))
-                {
-                    const int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
-                    // TODO: 실드가 남아있으면 체력 미감소 처리 유지할지 말지?
-                    // 일단은 실드로 모두 흡수되더라도 무적 시간만 주고 체력은 이후에 한 번만 계산
-                }
-            }
+		CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+	}
 
-            // 피격 처리(무적 시작)
-            PlayerState->bIsAttacked = true;
-            PlayerState->Invincibility();
-        }
-    }
-    else
-    {
-        // 적일 때 피격 애니메이션 트리거 
-        if (Owner)
-        {
-            if (USkeletalMeshComponent* Skel = Owner->FindComponentByClass<USkeletalMeshComponent>())
-            {
-                if (UAnimInstance* Anim = Skel->GetAnimInstance())
-                {
-                    if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Anim))
-                    {
-                        EnemyAnimInst->State = EAnimState::Hit;
-                    }
-                }
-            }
-        }
-    }
-
-    // 체력은 여기서 딱 한 번만 감소
-    CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-
-    // 항상 브로드캐스트 (0이어도 OnDeath 안에서 처리)
-    Broadcast();
-
-    UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
+	Broadcast();
+	UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
 }
 
 void UHealthComponent::Init(int32 InMax, int32 InCurrent)
