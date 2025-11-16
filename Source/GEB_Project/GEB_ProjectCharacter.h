@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HealthInterface.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
-#include "HealthInterface.h"
 #include "GEB_ProjectCharacter.generated.h"
 
 // ---------- Forward Declarations ----------
@@ -15,8 +15,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class UWeaponComponent;        // ¹«±â
-class UExperienceComponent;    // °æÇèÄ¡/·¹º§
+class UWeaponComponent;        // ë¬´ê¸°
+class UExperienceComponent;    // ê²½í—˜ì¹˜/ë ˆë²¨
 class UHealthComponent;
 class UWBP_StatusHUD;
 
@@ -38,8 +38,9 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: Å° ¹ÙÀÎµù¿¡¼­ Á÷Á¢ »ç¿ë) --------
+	// -------- Input handlers (public: í‚¤ ë°”ì¸ë”©ì—ì„œ ì§ì ‘ ì‚¬ìš©) --------
 	void Cheat_AddExp50();   // I key
+	void ToggleSkillTree();  // Z key
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -57,7 +58,7 @@ protected:
 	// -------- Combat --------
 	void Shoot(const FInputActionValue& Value);
 	void Reload(const FInputActionValue& Value);
-
+	
 	// ---------- Components ----------
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
@@ -87,7 +88,7 @@ protected:
 	UInputAction* ReloadAction = nullptr;
 
 	// ---------- Gameplay ----------
-	/** ¹«±â ÄÄÆ÷³ÍÆ®(·±Å¸ÀÓ¿¡ FindComponentByClass·Î Ä³½Ã) */
+	/** ë¬´ê¸° ì»´í¬ë„ŒíŠ¸(ëŸ°íƒ€ì„ì— FindComponentByClassë¡œ ìºì‹œ) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponComponent* WeaponComp = nullptr;
 
@@ -96,7 +97,7 @@ protected:
 	UExperienceComponent* Experience = nullptr;
 
 	// ---------- UI ----------
-	/** Ç×»ó º¸ÀÌ´Â »óÅÂ HUD (·¹º§/°æÇèÄ¡ µî) */
+	/** í•­ìƒ ë³´ì´ëŠ” ìƒíƒœ HUD (ë ˆë²¨/ê²½í—˜ì¹˜ ë“±) */
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StatusWidgetClass;
 

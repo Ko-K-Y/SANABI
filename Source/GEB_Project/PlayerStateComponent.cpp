@@ -36,7 +36,7 @@ void UPlayerStateComponent::Invincibility_Implementation()
 {
 	if (bIsAttacked)
 	{
-		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility, InvincibilityDuration, false);
+		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility_Implementation, InvincibilityDuration, false);
 	}
 }
 

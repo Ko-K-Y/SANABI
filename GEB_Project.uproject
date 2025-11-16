@@ -1,4 +1,43 @@
 {
+<<<<<<<<< Temporary merge branch 1
+  "FileVersion": 3,
+  "EngineAssociation": "5.4",
+  "Category": "",
+  "Description": "",
+  "Modules": [
+    {
+      "Name": "GEB_Project",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "AdditionalDependencies": [
+        "Engine",
+        "AIModule"
+      ]
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "ModelingToolsEditorMode",
+      "Enabled": true,
+      "TargetAllowList": [
+        "Editor"
+      ]
+    },
+    {
+      "Name": "HDRIBackdrop",
+      "Enabled": true
+    },
+    {
+      "Name": "MotionWarping",
+      "Enabled": true
+    },
+    {
+      "Name": "DisasterRecoveryClient",
+      "Enabled": true
+    }
+  ]
+}
+=========
 	"FileVersion": 3,
 	"EngineAssociation": "5.4",
 	"Category": "",
@@ -10,9 +49,9 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"UMG",
+				"UMG"
 				"AIModule",
-				"UMGEditor"
+                "UMGEditor"
 			]
 		}
 	],
@@ -26,3 +65,4 @@
 		}
 	]
 }
+>>>>>>>>> Temporary merge branch 2

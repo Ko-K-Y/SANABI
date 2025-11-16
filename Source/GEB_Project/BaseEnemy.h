@@ -17,7 +17,7 @@ class GEB_PROJECT_API ABaseEnemy : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	ABaseEnemy();
+	ABaseEnemy(const FObjectInitializer& ObjectInitializer);
 
 	FORCEINLINE UAttackComponent* GetAttackComponent() const { return AttackComp; }
 	FORCEINLINE UEnemyMoveComponent* GetMoveComponent() const { return MoveComp; }
@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UHealthComponent* HealthComp;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExpReward")
+	int32 ExpReward = 50;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -44,5 +47,5 @@ public:
 	UFUNCTION()
 	virtual void DieProcess();
 
-
+	virtual void DieProcessEnd();
 };

@@ -8,9 +8,14 @@
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "BaseEnemy.h"
+#include "StateInterface.h"
 
+// Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
 {
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 	MaxHealth = FMath::Clamp(MaxHealth, 1, MaxLimit); // 기본 3, 한도 5
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0, MaxHealth);
@@ -56,7 +61,18 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 
     AActor* Owner = GetOwner();
     const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1, 정수화
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
 
+	// 플레이어라면: 피격 상태면 데미지 무시, 아니면 적용
+	if (Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
+	{
+		UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>();
+		if (PlayerState->bIsAttacked)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Player Attacked"))
+				return;
+		}
     // 플레이어인 경우: 무적/쉴드 체크
     if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
     {

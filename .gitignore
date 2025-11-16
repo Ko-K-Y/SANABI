@@ -13,20 +13,35 @@ Saved
 *.xcodeproj
 *.xcworkspace
 
+Content\Characters\Mannequins\Anims\Pistol
+Content\Characters\Mannequins\Anims\Death
+Content\Characters\Mannequins\Materials
+Content\Characters\Mannequins\Textures
 Content/Characters
+
+# ***에셋 파일***
 Content/AnimStarterPack
 Content/ParagonWraith
 Content/Robot02
 Content/SoulCity
 Content/Stage
+
 Content/RadicalMike
 Content/ParagonCrunch
 Content/GrapplingHook
 Content/ParagonMinions
+Content/ParagonSteel
+Content/MixedVFX
+
+Content/Map/Map_KKY
+Content/Vefects
 
 Content/Map_LeeYH/CyberpunkIndustries
 Content/Map_LeeYH/Basic_VFX
 Content/Map_LeeYH/SoulCity
+Content/Map_LeeYH/Env_SciFi
+Content/Map_LeeYH/dieselpunk
+Content/Map_LeeYH/GoodSky
 
-Content/Sinhyeok
+Content/SciFiturretasset
 

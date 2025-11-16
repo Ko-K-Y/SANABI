@@ -27,7 +27,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnStateAnimationEnds();
 
-	void SetAnimStateAttack() { State = EAnimState::Attack; }
-	void SetAnimStateHit() { State = EAnimState::Hit; }
-	void SetAnimStateDie() { State = EAnimState::Die; }
+	virtual void SetAnimStateAttack();
+	virtual void SetAnimStateHit();
+	virtual void SetAnimStateDie();
 };
