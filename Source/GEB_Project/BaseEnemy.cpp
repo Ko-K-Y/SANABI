@@ -23,6 +23,11 @@ ABaseEnemy::ABaseEnemy(const FObjectInitializer& ObjectInitializer)
 void ABaseEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (MoveComp) {
+		if(GetCharacterMovement())
+			GetCharacterMovement()->MaxWalkSpeed = MoveComp->GetmovementSpeed_Implementation();
+	}
 	
 }
 

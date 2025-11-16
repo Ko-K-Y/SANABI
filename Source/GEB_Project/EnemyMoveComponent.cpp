@@ -13,10 +13,6 @@ UEnemyMoveComponent::UEnemyMoveComponent()
 	traceRange = 1000.f;
 	movementSpeed = 600.f;
 	jumpSpeed = 100.f;
-	// ...
-	traceRange = 1000.f;
-	movementSpeed = 600.f;
-	jumpSpeed = 100.f;
 }
 
 
