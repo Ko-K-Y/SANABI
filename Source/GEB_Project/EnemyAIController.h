@@ -22,6 +22,12 @@ class GEB_PROJECT_API AEnemyAIController : public AAIController
 public:
     AEnemyAIController();
 
+    UPROPERTY()
+    class USplineComponent* Spline;
+
+    UPROPERTY()
+    int32 CurrentSplinePointIndex;
+
 protected:
     virtual void OnPossess(APawn* InPawn) override;
 

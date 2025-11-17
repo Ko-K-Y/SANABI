@@ -35,5 +35,8 @@ public:
 	virtual float GettraceRange_Implementation();
 	virtual float GetmovementSpeed_Implementation();
 	virtual float GetjumpSpeed_Implementation();
+
+	UPROPERTY(EditAnywhere, Category = "Patrol")
+	class APatrolRoute* AssignedRoute;
 		
 };

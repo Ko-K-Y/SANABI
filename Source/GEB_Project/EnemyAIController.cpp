@@ -12,6 +12,7 @@
 #include "AttackComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "PatrolRoute.h"
 
 
 
@@ -59,6 +60,12 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
         float traceRange = IEnemyMove::Execute_GettraceRange(MoveComp);
         SightConfig->LoseSightRadius = traceRange + 200.f;
         PerceptionComp->RequestStimuliListenerUpdate();
+    }
+
+    if (MoveComp) {
+        if (MoveComp->AssignedRoute) {
+			Spline = MoveComp->AssignedRoute->PatrolSpline;
+        }
     }
 }
 
