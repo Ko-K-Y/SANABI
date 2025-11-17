@@ -3,154 +3,99 @@
 
 #include "BTT_DashAttack.h"
 #include "AIController.h"
-#include "SWarningOrErrorBox.h"
 #include "GameFramework/Pawn.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Animation/AnimInstance.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/AnimNotifies/AnimNotify.h"
+#include "Delegates/Delegate.h"               // AddUObject 오류 해결
+#include "BehaviorTree/BehaviorTreeComponent.h" // UBehaviorTreeComponent 정의 (MyOwnerComp 관련)
+
 
 UBTT_DashAttack::UBTT_DashAttack()
 {
-	bNotifyTick = true;  // TickTask 활성화
-	bCreateNodeInstance = true;
-
+	bNotifyTaskFinished = true;
+	
 	damage = 1;
 	maxAttackCoolTime = 2.f;
 	attackRange = 1500.f;
 	isCooldown = false;
 	coolTime = 0.f;
+	DashVelocity = 2000.f;
+	MontagePlayRate = 1.f;
+
+	NodeName = "Dash Attack";
 }
 
-EBTNodeResult::Type UBTT_DashAttack::ExcuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTT_DashAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	UE_LOG(LogTemp, Warning, TEXT("DashAttackExcuteTask1"));
-	AIController = OwnerComp.GetAIOwner();
-	if (!AIController)
-		return EBTNodeResult::Failed;
+	// ... (1. AI Controller, AI Character 유효성 검사 및 MyOwnerComp 저장)
+	AAIController* AIController = OwnerComp.GetAIOwner();
+	if (!AIController) return EBTNodeResult::Failed;
 
-	AIPawn = AIController->GetPawn();
-	if (!AIPawn)
-		return EBTNodeResult::Failed;
+	ACharacter* AICharacter = Cast<ACharacter>(AIController->GetPawn());
+	if (!AICharacter) return EBTNodeResult::Failed;
+	MyOwnerComp = &OwnerComp;
 
-	UE_LOG(LogTemp, Warning, TEXT("DashAttack ExcuteTask2"));
+	// ... (3. Player Location 및 LaunchVelocity 계산 로직 유지)
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	if (!PlayerPawn) return EBTNodeResult::Failed;
+
+	FVector AICurrentLocation = AICharacter->GetActorLocation();
+	FVector PlayerLocation = PlayerPawn->GetActorLocation();
+	FVector DirectionVector = PlayerLocation - AICurrentLocation;
+	FVector DashDirection = DirectionVector.GetSafeNormal(0.0001f);
+	FVector LaunchVelocity = DashDirection * DashVelocity;
+
+	// 여기에 공격을 할 거라는 예고로 플레이어의 발 부분에 빨간 원 생성하기 + 생성하고 1초 딜레이 주기
 	
-	// AIPawn이 ACharacter인지 확인하고 Movement Component를 가져옵니다.
-	ACharacter* OwnerChar = Cast<ACharacter>(AIPawn);
-	if (OwnerChar)
+	UAnimInstance* AnimInstance = AICharacter->GetMesh() ? AICharacter->GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInstance && DashMontage)
 	{
-		// 대시 시작 시 이동 컴포넌트를 비활성화하여 강제 이동을 방해하지 않도록 합니다.
-		OwnerChar->GetCharacterMovement()->SetMovementMode(MOVE_None); 
-	}
-	
-	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-	if (!BlackboardComp)
-		return EBTNodeResult::Failed;
-	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
-	if (!TargetActor) return EBTNodeResult::Failed;
+		// 몽타주 재생
+		PlayMontage(AICharacter, DashMontage, MontagePlayRate);
+		
+		// 몽타주 종료 델리게이트 바인딩 (Finish Execute 역할)
+		FOnMontageEnded MontageEndedDelegate;
+		MontageEndedDelegate.BindUObject(this, &UBTT_DashAttack::OnMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, DashMontage);
+		UE_LOG(LogTemp, Warning, TEXT("Delegate Bound"));
+		
 
-	// 액터의 현재 위치를 가져옵니다.
-	TargetLocation = TargetActor->GetActorLocation();
-	StartLocation = AIPawn->GetActorLocation();
-
-	
-	bIsDashing = true; // 점프 시작 신호 세팅
-	bMontagePlayed = false;  // 몽타주 재생 플래그 초기화
-
-	// 충돌체, 무브먼트 컴포넌트 등 준비 (필요시)
-	return EBTNodeResult::InProgress;  
-}
-
-void UBTT_DashAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
-{
-	if (!bIsDashing || !AIPawn)
-	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-		return;
-	}
-    
-	PerformDash(DeltaSeconds);
-
-	// 점프 완료 판단 후 FinishLatentTask 호출 필요
-}
-
-void UBTT_DashAttack::PerformDash(float DeltaTime)
-{
-	if (!AIPawn || isCooldown) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("PerformDash"))
-	// *** Dash Anim Montage 재생
-	if (DashMontage && bIsDashing && !bMontagePlayed) 
-	{
-		PlayMontage(DashMontage, 1.f);
-		bMontagePlayed = true; // 몽타주 재생 완료 플래그
-	}
-	
-	const float DashSpeed = 2000.f; // 원하는 대시 속도 (단위: cm/s)
-	FVector CurrentLocation = AIPawn->GetActorLocation();
-
-	// 대시 방향(normalize), 목표와 현 위치 사이 거리
-	FVector Direction = (TargetLocation - StartLocation).GetSafeNormal();
-	float DistanceToTarget = FVector::Dist(CurrentLocation, TargetLocation);
-
-	// 한번 이동할 거리 계산
-	float MoveStep = DashSpeed * DeltaTime;
-
-	if (DistanceToTarget > MoveStep)
-	{
-		// 다음 위치로 한 스텝 이동
-		FVector NextLocation = CurrentLocation + Direction * MoveStep;
-		AIPawn->SetActorLocation(NextLocation, true); // Sweep 옵션으로 충돌 검사 가능
+		AICharacter->GetWorldTimerManager().SetTimer(
+		DashDelayHandle,
+		FTimerDelegate::CreateUObject(this, &UBTT_DashAttack::DoDash, AICharacter, LaunchVelocity),
+		0.4f,
+		false
+	);
 	}
 	else
 	{
-		// 목표 위치 도달 or 지나칠 경우, 정확히 타겟 위치로 이동 후 종료
-		AIPawn->SetActorLocation(TargetLocation, true);
-		// 대시 끝나면 TickTask/FinishLatentTask 호출 등 완료 처리
-		bIsDashing = false;
-		bMontagePlayed = false; // 다음 대시를 위해 플래그 초기화
-		
-		// *** 데미지 처리 등 추가 로직
+		UE_LOG(LogTemp, Warning, TEXT("DashMontage or AnimInstance is null. Skipping animation."));
+	}
+    
+	// 몽타주 종료를 기다리기 위해 InProgress 반환
+	return EBTNodeResult::InProgress;
+}
 
-		// 쿨다운 시작
-		isCooldown = true;
-		coolTime = maxAttackCoolTime;
+void UBTT_DashAttack::PlayMontage(ACharacter* TargetCharacter, UAnimMontage* Montage, float PlayRate)
+{
+	if (!TargetCharacter) return;
+	UAnimInstance* AnimInstance = TargetCharacter->GetMesh() ? TargetCharacter->GetMesh()->GetAnimInstance() : nullptr;
 
-		// 이동 컴포넌트를 다시 활성화 (예: 걷기)
-		ACharacter* OwnerChar = Cast<ACharacter>(AIPawn);
-		if (OwnerChar)
-		{
-			OwnerChar->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		}
-		
-		// BTT 노드 실행 종료 및 결과 반환
-		UBehaviorTreeComponent* OwnerComp = Cast<UBehaviorTreeComponent>(AIController->GetBrainComponent());
-		if (OwnerComp)
-		{
-			// 성공적으로 대시 완료
-			FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
-		}
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage, PlayRate);
 	}
 }
 
-void UBTT_DashAttack::PlayMontage(UAnimMontage* Montage, float PlaySpeed)
+void UBTT_DashAttack::DoDash(ACharacter* AICharacter, FVector LaunchVelocity)
 {
-	ACharacter* OwnerChar = Cast<ACharacter>(AIPawn);
-	if (!OwnerChar)
-	{
-		UE_LOG(LogTemp, Error, TEXT("UBTT_DashAttack::PlayMontage - AIPawn is not an ACharacter!"));
-		return;
-	};
-	UAnimInstance* AnimInstance = OwnerChar->GetMesh() ? OwnerChar->GetMesh()->GetAnimInstance() : nullptr;
-	if (!AnimInstance)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AnimInstance is nullptr!"));
-		return;
-	}
-	if (AnimInstance && Montage)
-	{
-		AnimInstance->Montage_Play(Montage, PlaySpeed);
-	}
+	// ✨ 3. 이동 실행 (몽타주 재생 여부와 관계없이 블루프린트처럼 즉시 실행)
+	AICharacter->LaunchCharacter(LaunchVelocity, false, false);
 }
 
 bool UBTT_DashAttack::GetisCoolDown()
@@ -163,4 +108,18 @@ float UBTT_DashAttack::GetattackRange()
 {
 	return attackRange;
 
+}
+
+void UBTT_DashAttack::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnMontageEnded"));
+	
+	if (Montage == DashMontage && MyOwnerComp) 
+	{
+		FinishLatentTask(*MyOwnerComp, EBTNodeResult::Succeeded);
+       
+		UE_LOG(LogTemp, Warning, TEXT("Montage End/Interrupted. Finishing task as SUCCEEDED."));
+       
+		MyOwnerComp = nullptr;
+	}
 }
