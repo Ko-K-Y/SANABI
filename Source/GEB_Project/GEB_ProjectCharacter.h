@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "HealthComponent.h"
 #include "GEB_ProjectCharacter.generated.h"
 
 // ---------- Forward Declarations ----------
@@ -15,6 +16,10 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+class UWeaponComponent;        // ¹«±â
+class UExperienceComponent;    // °æÇèÄ¡/·¹º§
+class UHealthComponent;
+class UWBP_StatusHUD;
 
 class UWeaponComponent;        // ï¿½ï¿½ï¿½ï¿½
 class UExperienceComponent;    // ï¿½ï¿½ï¿½ï¿½Ä¡/ï¿½ï¿½ï¿½ï¿½
@@ -37,14 +42,16 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: Å° ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½) --------
+	// -------- Input handlers (public: Å° ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿? --------
 	void Cheat_AddExp50();   // I key
-	void ToggleSkillTree();  // Z key
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION()
+	void DebugHurt();
 
 protected:
 	// -------- Movement / Look --------
@@ -100,5 +107,12 @@ protected:
 	UPROPERTY(Transient)
 	UUserWidget* StatusWidget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UWBP_StatusHUD> StatusHUDClass;
+
+	UPROPERTY()
+	TObjectPtr<UWBP_StatusHUD> StatusHUD;
 };

@@ -4,7 +4,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Pawn.h"
 #include "ExperienceComponent.h"
-#include "PlayerProgressGameInstance.h" 
+#include "PlayerProgressGameInstance.h"
+#include "Engine/World.h"
 
 ALevelTransitionTrigger::ALevelTransitionTrigger()
 {
@@ -36,8 +37,9 @@ void ALevelTransitionTrigger::OnBeginOverlap(
     // 1) 현재 경험치 상태 저장
     if (UExperienceComponent* XP = Pawn->FindComponentByClass<UExperienceComponent>())
     {
-
-        if (UPlayerProgressGameInstance* GI = GetGameInstance<UPlayerProgressGameInstance>())
+        UPlayerProgressGameInstance* GI =
+            GetWorld() ? Cast<UPlayerProgressGameInstance>(GetWorld()->GetGameInstance()) : nullptr;
+        if (GI)
         {
             GI->CaptureFrom(XP);
         }
