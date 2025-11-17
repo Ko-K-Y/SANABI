@@ -24,12 +24,12 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health")
-	int MaxHealth = 3;          // 초기 3칸
+	int32 MaxHealth = 3;          // 초기 3칸
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health")
-	int CurrentHealth = 3;
+	int32 CurrentHealth = 3;
 
 	UPROPERTY(EditAnywhere, Category = "Health")
-	int MaxLimit = 5;
+	int32 MaxLimit = 5;
 
 public:	
 	// Called every frame

@@ -52,89 +52,95 @@ int UHealthComponent::GetMaxHealth_Implementation()
 
 void UHealthComponent::ApplyDamage_Implementation(float Damage)
 {
-	if (Damage <= 0.f || CurrentHealth <= 0) return;
+    if (Damage <= 0.f || CurrentHealth <= 0) return;
 
-	AActor* Owner = GetOwner();                             
-	const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1로 정수화
+    AActor* Owner = GetOwner();
+    const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1
 
-	// 플레이어인 경우: 무적/쉴드 처리
-	if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
-	{
-		if (UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>())
-		{
-			if (PlayerState->bIsAttacked)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Player Invincible - damage ignored"));
-				return;
-			}
+    // ───────── 플레이어일 때: 무적/쉴드 처리 ─────────
+    if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
+    {
+        if (UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>())
+        {
+            // 무적 중이면 데미지 무시
+            if (PlayerState->bIsAttacked)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Player Invincible - damage ignored"));
+                return;
+            }
 
-			// 쉴드가 켜져 있으면 먼저 쉴드에 적용
-			if (UShieldComponent* ShieldComp = Owner->FindComponentByClass<UShieldComponent>())
-			{
-				if (IShieldInterface::Execute_IsShieldActive(ShieldComp))
-				{
-					// 팀 정책에 따라: 반환값을 '남은 데미지'로 쓰도록 합의했다면 그걸 체력에 반영
-					const int32 RemainingDamage =
-						IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, (float)IntDamage);
+            bool bApplyToHP = true;
+            int32 DamageToApply = IntDamage;
 
-					// 남은 데미지가 없으면 체력은 깎지 않고 무적/피격 처리만
-					if (RemainingDamage <= 0)
-					{
-						PlayerState->bIsAttacked = true;
-						PlayerState->Invincibility();
-						Broadcast(); // UI는 갱신(무적/피격 반응을 위해)
-						UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (shield absorbed)"), CurrentHealth, MaxHealth);
-						return;
-					}
+            // 쉴드 먼저 적용
+            if (UShieldComponent* ShieldComp = Owner->FindComponentByClass<UShieldComponent>())
+            {
+                if (IShieldInterface::Execute_IsShieldActive(ShieldComp))
+                {
+                    const int32 RemainingDamage = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, float(IntDamage));
 
-					// 남은 데미지가 있으면 그 값을 적용
-					CurrentHealth = FMath::Clamp(CurrentHealth - RemainingDamage, 0, MaxHealth);
-				}
-				else
-				{
-					// 쉴드 비활성: 일반 적용
-					CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-				}
-			}
-			else
-			{
-				// 쉴드 컴포넌트 없음: 일반 적용
-				CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-			}
+                    // 쉴드가 전부 흡수
+                    if (RemainingDamage <= 0)
+                    {
+                        // 무적 시작 (인터페이스 이벤트는 반드시 Execute_ 로!)
+                        PlayerState->bIsAttacked = true;
+                        if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
+                        {
+                            IStateInterface::Execute_Invincibility(PlayerState);
+                        }
 
-			// 피격 처리(무적 시작)
-			PlayerState->bIsAttacked = true;
-			PlayerState->Invincibility();
-		}
-		else
-		{
-			// PlayerState가 없으면 그냥 적용
-			CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-		}
-	}
-	else
-	{
-		// 적/기타 액터: 피격 애니 트리거 후 적용
-		if (Owner)
-		{
-			if (USkeletalMeshComponent* Skel = Owner->FindComponentByClass<USkeletalMeshComponent>())
-			{
-				if (UAnimInstance* Anim = Skel->GetAnimInstance())
-				{
-					if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Anim))
-					{
-						EnemyAnimInst->State = EAnimState::Hit;
-					}
-				}
-			}
-		}
+                        Broadcast(); // UI 갱신(피격 반응 등)
+                        UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (shield absorbed)"), CurrentHealth, MaxHealth);
+                        return;
+                    }
 
-		CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-	}
+                    // 일부만 흡수 → 남은 데미지 체력에 적용
+                    DamageToApply = RemainingDamage;
+                }
+            }
 
-	Broadcast();
-	UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
+            // 체력 감소
+            if (bApplyToHP)
+            {
+                CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApply, 0, MaxHealth);
+            }
+
+            // 무적 시작 (인터페이스 이벤트로 호출!)
+            PlayerState->bIsAttacked = true;
+            if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
+            {
+                IStateInterface::Execute_Invincibility(PlayerState);
+            }
+
+            Broadcast();
+            UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
+            return;
+        }
+
+        // PlayerStateComponent가 없으면 일반 적용
+        CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+        Broadcast();
+        UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (no PlayerState)"), CurrentHealth, MaxHealth);
+        return;
+    }
+
+    // ───────── 적/기타 액터 ─────────
+    if (Owner)
+    {
+        if (USkeletalMeshComponent* Skel = Owner->FindComponentByClass<USkeletalMeshComponent>())
+        {
+            if (UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Skel->GetAnimInstance()))
+            {
+                EnemyAnimInst->State = EAnimState::Hit;
+            }
+        }
+    }
+
+    CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+    Broadcast();
+    UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (non-player)"), CurrentHealth, MaxHealth);
 }
+
 
 void UHealthComponent::Init(int32 InMax, int32 InCurrent)
 {

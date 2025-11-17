@@ -23,15 +23,11 @@ void UWBP_StatusHUD::SetHealth(UHealthComponent* InHealth)
         Health->OnDeath.AddDynamic(this, &UWBP_StatusHUD::HandleDeath);
 
         // 초기 1회 갱신
-        HandleHealthChanged(Health->GetCurrentHealth_Implementation(),
+        HandleHealthChanged(
+            Health->GetCurrentHealth_Implementation(),
             Health->GetMaxHealth_Implementation());
     }
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("SetHealth called"));
-    if (Health)
-    {
-        HandleHealthChanged(Health->GetCurrentHealth_Implementation(),
-            Health->GetMaxHealth_Implementation());
-    }
 }
 
 void UWBP_StatusHUD::HandleHealthChanged(int32 Current, int32 Max)
@@ -39,7 +35,6 @@ void UWBP_StatusHUD::HandleHealthChanged(int32 Current, int32 Max)
     UpdateHearts(Current, Max);   // BP의 UpdateHearts 호출
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,
         FString::Printf(TEXT("HandleHealthChanged C=%d M=%d"), Current, Max));
-    UpdateHearts(Current, Max);
 }
 
 void UWBP_StatusHUD::HandleDeath()
