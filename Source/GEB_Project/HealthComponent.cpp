@@ -57,6 +57,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 	if (Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
 	{
 		UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>();
+		if (!PlayerState) return;
 		if (PlayerState->bIsAttacked)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Player Attacked"))

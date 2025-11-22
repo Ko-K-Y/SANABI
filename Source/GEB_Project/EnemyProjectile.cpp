@@ -63,15 +63,8 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 	// 자신의 충돌과 무시할 액터는 무시
 	if (OtherActor && OtherActor != this && OtherComp)
 	{
-		// HealthComponent가 부착된 경우
-		if (OtherActor->Implements<UHealthInterface>()) {
-			IHealthInterface::Execute_ApplyDamage(OtherActor, ProjectileDamage);
-			GEngine->AddOnScreenDebugMessage(
-				-1, 3.f, FColor::Purple,
-				FString::Printf(TEXT("HP: %d"), IHealthInterface::Execute_GetCurrentHealth(OtherActor)));
-		}
 
-		/*UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>();
+		UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (HealthComp)
 		{
 			IHealthInterface::Execute_ApplyDamage(HealthComp, ProjectileDamage);
@@ -79,7 +72,7 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 			GEngine->AddOnScreenDebugMessage(
 				-1, 3.f, FColor::Purple,
 				FString::Printf(TEXT("HP: %d"), IHealthInterface::Execute_GetCurrentHealth(HealthComp)));
-		}*/
+		}
 		else
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("No HealthComponent!"));
