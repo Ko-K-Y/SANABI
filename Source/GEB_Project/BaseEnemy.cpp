@@ -66,6 +66,11 @@ void ABaseEnemy::DieProcess() {
 			}
 		}
 	}
+	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
+	if (animInst) {
+		animInst->SetAnimStateDie();
+	}
+
 }
 
 void ABaseEnemy::DieProcessEnd() {

@@ -17,7 +17,7 @@ void UEnemyBaseAnimInstance::OnStateAnimationEnds()
 				State = EAnimState::Locomotion;
 			}
 			else {
-				State = EAnimState::Die;
+				enemy->DieProcess();
 			}
 		}
 		else if (State == EAnimState::Die) {
