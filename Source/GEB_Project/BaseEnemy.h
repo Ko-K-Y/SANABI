@@ -47,6 +47,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void DieProcess();
 
-	UFUNCTION(Blue)
+	UFUNCTION()
 	virtual void DieProcessEnd();
 };
