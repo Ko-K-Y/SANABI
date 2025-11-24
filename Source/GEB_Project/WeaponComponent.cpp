@@ -9,6 +9,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "GEB_ProjectCharacter.h"
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
@@ -56,6 +57,22 @@ void UWeaponComponent::Fire()
 		false                           
 	);
 	
+	// 11.24 권신혁 추가. 공격 애니메이션 적용
+	if (FireMontage)
+	{
+		// 내 주인(Owner)이 캐릭터인지 확인
+		ACharacter* MyCharacter = Cast<ACharacter>(GetOwner());
+		if (MyCharacter)
+		{
+			// 캐릭터의 메시 -> 애님 인스턴스를 가져와서 몽타주 재생
+			UAnimInstance* AnimInstance = MyCharacter->GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->Montage_Play(FireMontage);
+			}
+		}
+	}
+
 	CurrentAmmo--;
 	UE_LOG(LogTemp, Warning, TEXT("CurrentAmmo: %d"), CurrentAmmo);
 	
@@ -178,11 +195,17 @@ void UWeaponComponent::Fire()
 			// 2. 빔 트레이서(총알 궤적) 스폰 ---
 			if (TracerEffect)
 			{
+				// 시작점에서 끝점을 향하는 방향 벡터
+				FVector ShotDirection = TraceEndLocation - MuzzleLocation;
+
+				// 해당 방향 벡터를 회전값으로 변환
+				FRotator TracerRotation = ShotDirection.Rotation();
+
 				UParticleSystemComponent* BeamComponent = UGameplayStatics::SpawnEmitterAtLocation(
 					GetWorld(),
 					TracerEffect,
 					MuzzleLocation,
-					FRotator::ZeroRotator,
+					TracerRotation,
 					true
 				);
 

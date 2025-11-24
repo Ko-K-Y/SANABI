@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameFramework/Character.h"
 #include "WeaponComponent.generated.h"
+
 
 class UParticleSystem;
 
@@ -51,6 +53,10 @@ protected: // <--- 블루프린트에서 보이도록 protected로 변경
 	// <--- 피격 효과 (임팩트) ---
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 	UParticleSystem* HitImpactEffect;
+
+	// 11.24 권신혁 추가. 공격 애니메이션
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UAnimMontage* FireMontage;
 	
 public:
 	// *** Reload ***

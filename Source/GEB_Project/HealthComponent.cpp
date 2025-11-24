@@ -73,6 +73,12 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 		PlayerState->bIsAttacked = true;
 		PlayerState->Invincibility();
 		if (CurrentHealth > 0) CurrentHealth -= Damage;
+
+		// 11.24 권신혁 추가. 데미지 입으면 방송
+		if (CurrentHealth > 0) // 죽은게 아니라면
+		{
+			OnDamaged.Broadcast();
+		}
 	}
 	// 공통 로직
 	else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
