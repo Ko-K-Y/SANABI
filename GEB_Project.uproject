@@ -24,10 +24,7 @@
 			]
 		},
 		{
-<<<<<<< HEAD
-			"Name": "MotionWarping",
-			"Enabled": true
-=======
+
 			"Name": "HDRIBackdrop",
 			"Enabled": true
 		},
@@ -38,7 +35,6 @@
 		{
 			"Name": "DisasterRecoveryClient",
 			"Enabled": true
->>>>>>> develop
 		}
 	]
 }
