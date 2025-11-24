@@ -69,35 +69,6 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
                 return;
             }
 
-		PlayerState->bIsAttacked = true;
-		PlayerState->Invincibility();
-		if (CurrentHealth > 0) CurrentHealth -= Damage;
-
-		// 11.24 권신혁 추가. 데미지 입으면 방송
-		if (CurrentHealth > 0) // 죽은게 아니라면
-		{
-			OnDamaged.Broadcast();
-		}
-	}
-	// 공통 로직
-	else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
-		UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
-		if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)){
-			int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
-		}
-		else {
-			UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
-			if (EnemyAnimInst) {
-				if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
-				EnemyAnimInst->SetAnimStateHit();
-			}
-			CurrentHealth -= Damage;
-			if (CurrentHealth <= 0) {
-				CurrentHealth = 0;
-				EnemyOwner->DieProcess();
-			}
-		}
-	}
             bool bApplyToHP = true;
             int32 DamageToApply = IntDamage;
 
@@ -132,6 +103,12 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (bApplyToHP)
             {
                 CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApply, 0, MaxHealth);
+
+                // 11.24 권신혁 추가. 데미지 입으면 방송
+                if (CurrentHealth > 0) // 죽은게 아니라면
+                {
+                    OnDamaged.Broadcast();
+                }
             }
 
             // 무적 시작 (인터페이스 이벤트로 호출!)
