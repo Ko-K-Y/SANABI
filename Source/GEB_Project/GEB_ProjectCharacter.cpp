@@ -29,6 +29,7 @@
 #include "WeaponComponent.h"
 #include "ExperienceComponent.h"
 #include "PlayerProgressGameInstance.h"
+#include "HealthComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -79,6 +80,14 @@ void AGEB_ProjectCharacter::BeginPlay()
 	if (!WeaponComp)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"));
+	}
+
+	// 11.24 권신혁 추가. 이벤트 연결
+	UHealthComponent* HealthComp = FindComponentByClass<UHealthComponent>();
+	if (HealthComp)
+	{
+		// HealthComp의 OnDamaged가 울리면 -> 내 OnHit 함수를 실행해라
+		HealthComp->OnDamaged.AddDynamic(this, &AGEB_ProjectCharacter::OnHit);
 	}
 
 	// ��Ʈ�ѷ�/�����÷��̾�
@@ -267,6 +276,11 @@ void AGEB_ProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AGEB_ProjectCharacter::Shoot(const FInputActionValue& /*Value*/)
 {
+	// 11.24 권신혁 추가. 그래플링 중이면 공격 불가
+	bool InGrappling = GetValueFromBP();
+	if (InGrappling) return;
+
+
 	UE_LOG(LogTemp, Warning, TEXT("Shoot!"));
 	if (WeaponComp) { WeaponComp->Fire(); }
 }
@@ -277,6 +291,24 @@ void AGEB_ProjectCharacter::Reload(const FInputActionValue& /*Value*/)
 	if (WeaponComp) { WeaponComp->Reload(); }
 }
 
+// 11.24 권신혁 추가. 피격 당하면 호출되는 함수
+void AGEB_ProjectCharacter::OnHit()
+{
+	// 로그 확인
+	UE_LOG(LogTemp, Warning, TEXT("Ouch! I'm hit!"));
+
+	// 몽타주 재생
+	if (HitReactMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			// 피격 애니메이션 재생
+			AnimInstance->Montage_Play(HitReactMontage);
+		}
+
+	}
+}
 void AGEB_ProjectCharacter::DebugHurt()
 {
 	UHealthComponent* HC = HealthComponent ? HealthComponent.Get() : FindComponentByClass<UHealthComponent>();
@@ -285,3 +317,4 @@ void AGEB_ProjectCharacter::DebugHurt()
 		IHealthInterface::Execute_ApplyDamage(HC, 1.f);
 	}
 }
+	

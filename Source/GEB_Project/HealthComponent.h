@@ -7,6 +7,9 @@
 #include "HealthInterface.h"
 #include "HealthComponent.generated.h"
 
+// 11.24 권신혁 추가. 피격 델리게이트 선언
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamagedSignature);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, int32, Current, int32, Max);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 
@@ -40,6 +43,10 @@ public:
 	virtual int GetMaxHealth_Implementation() override;
 	virtual void ApplyDamage_Implementation(float Damage) ;
 
+	// 11.24 권신혁 추가. 데미지 입었다는 것을 저장할 변수
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnDamagedSignature OnDamaged;
+	
 	// 편의 함수들(스킬/회복/초기화용)
 	UFUNCTION(BlueprintCallable) void Init(int32 InMax, int32 InCurrent);
 	UFUNCTION(BlueprintCallable) void SetMax(int32 InMax, bool bFillToMax = false);

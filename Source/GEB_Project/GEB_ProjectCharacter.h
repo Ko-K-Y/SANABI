@@ -16,8 +16,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class UWeaponComponent;        // ����
-class UExperienceComponent;    // ����ġ/����
+class UWeaponComponent;        // ����
+class UExperienceComponent;    // ����ġ/����
 class UHealthComponent;
 class UWBP_StatusHUD;
 
@@ -42,7 +42,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: Ű ���ε����� ���� ���? --------
+	// -------- Input handlers (public: Ű ���ε����� ���� ���? --------
 	void Cheat_AddExp50();   // I key
 
 	/** Returns CameraBoom subobject **/
@@ -107,6 +107,18 @@ protected:
 	UPROPERTY(Transient)
 	UUserWidget* StatusWidget = nullptr;
 
+	// 11.24 권신혁 추가
+	// 블루프린트의 변수를 가져오는 함수
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	bool GetValueFromBP();
+
+	// 1. 에디터에서 피격 몽타주를 넣을 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UAnimMontage* HitReactMontage;
+
+	// 2. 체력 컴포넌트가 신호를 보내면 실행될 함수
+	UFUNCTION(BlueprintCallable, Category = "OnHit")
+	void OnHit();
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UHealthComponent> HealthComponent;
 
