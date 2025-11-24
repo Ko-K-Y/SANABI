@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "HealthComponent.h"
 #include "GEB_ProjectCharacter.generated.h"
 
 // ---------- Forward Declarations ----------
@@ -15,6 +16,10 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
+class UWeaponComponent;        // ����
+class UExperienceComponent;    // ����ġ/����
+class UHealthComponent;
+class UWBP_StatusHUD;
 
 class UWeaponComponent;        // ����
 class UExperienceComponent;    // ����ġ/����
@@ -37,14 +42,16 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// -------- Input handlers (public: Ű ���ε����� ���� ���) --------
+	// -------- Input handlers (public: Ű ���ε����� ���� ���? --------
 	void Cheat_AddExp50();   // I key
-	void ToggleSkillTree();  // Z key
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION()
+	void DebugHurt();
 
 protected:
 	// -------- Movement / Look --------
@@ -112,4 +119,12 @@ protected:
 	// 2. 체력 컴포넌트가 신호를 보내면 실행될 함수
 	UFUNCTION(BlueprintCallable, Category = "OnHit")
 	void OnHit();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UHealthComponent> HealthComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UWBP_StatusHUD> StatusHUDClass;
+
+	UPROPERTY()
+	TObjectPtr<UWBP_StatusHUD> StatusHUD;
 };

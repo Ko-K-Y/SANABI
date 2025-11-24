@@ -17,6 +17,7 @@ Content\Characters\Mannequins\Anims\Pistol
 Content\Characters\Mannequins\Anims\Death
 Content\Characters\Mannequins\Materials
 Content\Characters\Mannequins\Textures
+Content/Characters
 
 # ***에셋 파일***
 Content/AnimStarterPack
@@ -31,6 +32,11 @@ Content/GrapplingHook
 Content/ParagonMinions
 Content/ParagonSteel
 Content/MixedVFX
+Content/ParagonProps
+Content/Turrets
+Content/KiteDemo
+Content/Lighting
+Content/SampleMap
 
 Content/Map/Map_KKY
 Content/Vefects
@@ -42,4 +48,5 @@ Content/Map_LeeYH/Env_SciFi
 Content/Map_LeeYH/dieselpunk
 Content/Map_LeeYH/GoodSky
 
+Content/SciFiturretasset
 

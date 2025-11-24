@@ -21,6 +21,9 @@
 
 // UI (UMG)
 #include "Blueprint/UserWidget.h"
+#include "HealthComponent.h"     
+#include "HealthInterface.h"
+#include "WBP_StatusHUD.h"
 
 // Gameplay/Project
 #include "WeaponComponent.h"
@@ -91,7 +94,7 @@ void AGEB_ProjectCharacter::BeginPlay()
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	
+
 	if (ULocalPlayer* LP = PC->GetLocalPlayer())
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
@@ -104,16 +107,30 @@ void AGEB_ProjectCharacter::BeginPlay()
 		}
 	}
 
-	// �׻� ǥ�õǴ� HUD
-	if (!StatusWidget && StatusWidgetClass)
+	if (StatusHUDClass)
 	{
-		StatusWidget = CreateWidget<UUserWidget>(PC, StatusWidgetClass);
-		if (StatusWidget)
+		StatusHUD = CreateWidget<UWBP_StatusHUD>(PC, StatusHUDClass);
+		if (StatusHUD)
 		{
-			StatusWidget->AddToViewport(/*ZOrder=*/0);
-			StatusWidget->SetVisibility(ESlateVisibility::Visible);
+			StatusHUD->AddToViewport(0);
+			StatusHUD->SetVisibility(ESlateVisibility::Visible);
+
+			// Health 컴포넌트 찾아서 위젯에 주입
+			UHealthComponent* HC = nullptr;
+			if (HealthComponent)        HC = HealthComponent;
+			else                        HC = FindComponentByClass<UHealthComponent>();
+
+			if (HC)
+			{
+				StatusHUD->SetHealth(HC);   // ← 여기서 바인딩 + 초기 하트 갱신 끝
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("HealthComponent not found on Character"));
+			}
 		}
 	}
+
 
 
 
@@ -156,6 +173,8 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	// MappingContext�� BeginPlay���� �߰�
 
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	PlayerInputComponent->BindAction("Debug_Hurt", IE_Pressed, this, &AGEB_ProjectCharacter::DebugHurt);
+
 
 	// Enhanced Input �׼� ���ε�(�� ���� ����)
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -287,5 +306,15 @@ void AGEB_ProjectCharacter::OnHit()
 			// 피격 애니메이션 재생
 			AnimInstance->Montage_Play(HitReactMontage);
 		}
+
 	}
 }
+void AGEB_ProjectCharacter::DebugHurt()
+{
+	UHealthComponent* HC = HealthComponent ? HealthComponent.Get() : FindComponentByClass<UHealthComponent>();
+	if (HC)
+	{
+		IHealthInterface::Execute_ApplyDamage(HC, 1.f);
+	}
+}
+	
