@@ -12,23 +12,24 @@
 #include "AttackComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "PatrolRoute.h"
 
 
 
 AEnemyAIController::AEnemyAIController()
 {
-    // Behavior Tree ¹× Blackboard ÄÄÆ÷³ÍÆ® »ý¼º
+    // Behavior Tree ï¿½ï¿½ Blackboard ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
     BehaviorComp = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorComp"));
     BlackboardComp = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackboardComp"));
 
-    // Perception ÄÄÆ÷³ÍÆ® ¹× ½Ã¾ß °¨°¢ ¼³Á¤
+    // Perception ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ ï¿½Ã¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
     SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 
     SightConfig->SightRadius = 1500.f;
     SightConfig->LoseSightRadius = 1700.f;
     SightConfig->PeripheralVisionAngleDegrees = 90.f;
-    SightConfig->SetMaxAge(0.5f);
+    SightConfig->SetMaxAge(50.f);
     SightConfig->DetectionByAffiliation.bDetectEnemies = true;
     SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
     SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -44,14 +45,14 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    // Behavior Tree ½ÃÀÛ
+    // Behavior Tree ï¿½ï¿½ï¿½ï¿½
     if (BehaviorTree)
     {
         BlackboardComp->InitializeBlackboard(*BehaviorTree->BlackboardAsset);
         BehaviorComp->StartTree(*BehaviorTree);
     }
 
-    // ÄÄÆ÷³ÍÆ® Ä³½Ì
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ä³ï¿½ï¿½
     AttackComp = InPawn ? InPawn->FindComponentByClass<UAttackComponent>() : nullptr;
     MoveComp = InPawn ? InPawn->FindComponentByClass<UEnemyMoveComponent>() : nullptr;
 
@@ -60,31 +61,36 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
         SightConfig->LoseSightRadius = traceRange + 200.f;
         PerceptionComp->RequestStimuliListenerUpdate();
     }
+
+    if (MoveComp) {
+        if (MoveComp->AssignedRoute) {
+			Spline = MoveComp->AssignedRoute->PatrolSpline;
+        }
+    }
 }
 
 void AEnemyAIController::OnTargetUpdated(AActor* Target, FAIStimulus Stimulus)
 {
     if (!Target || !AttackComp || !MoveComp) return;
-
     if (!Target->GetInstigatorController()->IsPlayerController()) { return; }
 
     APawn* ControlledPawn = GetPawn();
     if (!ControlledPawn) return;
 
     //if (Stimulus.WasSuccessfullySensed()){
-    //    SetFocus(Target); // AI°¡ Å¸°ÙÀ» ¹Ù¶óº¸°Ô ÇÔ
+    //    SetFocus(Target); // AIï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¶óº¸°ï¿½ ï¿½ï¿½
     //}
     else{
-        ClearFocus(EAIFocusPriority::Gameplay); // °¨ÁöÇÏÁö ¸øÇÏ¸é Æ÷Ä¿½º ÇØÁ¦
+        ClearFocus(EAIFocusPriority::Gameplay); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½Ä¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
 
-    // ÇÃ·¹ÀÌ¾î¿ÍÀÇ °Å¸® °è»ê
+    // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½ ï¿½ï¿½ï¿½
     float Distance = FVector::Dist(Target->GetActorLocation(), ControlledPawn->GetActorLocation());
 
-    // BlackBoard Å°¿¡ ´ë»ó ¼³Á¤
+    // BlackBoard Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     BlackboardComp->SetValueAsObject("Target", Target);
 
-    // ÃßÀû ¹× °ø°Ý ¿©ºÎ °áÁ¤
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     bool bInTraceRange = Distance >= IAttack::Execute_GetattackRange(AttackComp) && Distance <= IEnemyMove::Execute_GettraceRange(MoveComp);
     bool bInAttackRange = Distance <= IAttack::Execute_GetattackRange(AttackComp);
 

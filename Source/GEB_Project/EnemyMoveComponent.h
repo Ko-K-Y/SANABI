@@ -20,8 +20,12 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyMoveStat", meta = (AllowPrivateAccess = "true"))
 	float traceRange;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyMoveStat", meta = (AllowPrivateAccess = "true"))
 	float movementSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyMoveStat", meta = (AllowPrivateAccess = "true"))
 	float jumpSpeed;
 
 public:	
@@ -31,5 +35,8 @@ public:
 	virtual float GettraceRange_Implementation();
 	virtual float GetmovementSpeed_Implementation();
 	virtual float GetjumpSpeed_Implementation();
+
+	UPROPERTY(EditAnywhere, Category = "Patrol")
+	class APatrolRoute* AssignedRoute;
 		
 };
