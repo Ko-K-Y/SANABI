@@ -10,8 +10,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"UMG",
-				"AIModule"
+				"AIModule",
+				"UMGEditor"
 			]
 		}
 	],
@@ -22,6 +22,10 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "HDRIBackdrop",
+			"Enabled": true
 		},
 		{
 			"Name": "MotionWarping",
