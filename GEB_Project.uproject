@@ -10,8 +10,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"UMG",
-				"AIModule"
+				"AIModule",
+				"UMGEditor"
 			]
 		}
 	],
@@ -24,8 +24,21 @@
 			]
 		},
 		{
+<<<<<<< HEAD
 			"Name": "MotionWarping",
 			"Enabled": true
+=======
+			"Name": "HDRIBackdrop",
+			"Enabled": true
+		},
+		{
+			"Name": "MotionWarping",
+			"Enabled": true
+		},
+		{
+			"Name": "DisasterRecoveryClient",
+			"Enabled": true
+>>>>>>> develop
 		}
 	]
 }

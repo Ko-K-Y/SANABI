@@ -21,11 +21,15 @@
 
 // UI (UMG)
 #include "Blueprint/UserWidget.h"
+#include "HealthComponent.h"     
+#include "HealthInterface.h"
+#include "WBP_StatusHUD.h"
 
 // Gameplay/Project
 #include "WeaponComponent.h"
 #include "ExperienceComponent.h"
 #include "PlayerProgressGameInstance.h"
+#include "HealthComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -78,11 +82,19 @@ void AGEB_ProjectCharacter::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("WeaponComp is null!"));
 	}
 
+	// 11.24 권신혁 추가. 이벤트 연결
+	UHealthComponent* HealthComp = FindComponentByClass<UHealthComponent>();
+	if (HealthComp)
+	{
+		// HealthComp의 OnDamaged가 울리면 -> 내 OnHit 함수를 실행해라
+		HealthComp->OnDamaged.AddDynamic(this, &AGEB_ProjectCharacter::OnHit);
+	}
+
 	// ��Ʈ�ѷ�/�����÷��̾�
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	
+
 	if (ULocalPlayer* LP = PC->GetLocalPlayer())
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
@@ -95,16 +107,30 @@ void AGEB_ProjectCharacter::BeginPlay()
 		}
 	}
 
-	// �׻� ǥ�õǴ� HUD
-	if (!StatusWidget && StatusWidgetClass)
+	if (StatusHUDClass)
 	{
-		StatusWidget = CreateWidget<UUserWidget>(PC, StatusWidgetClass);
-		if (StatusWidget)
+		StatusHUD = CreateWidget<UWBP_StatusHUD>(PC, StatusHUDClass);
+		if (StatusHUD)
 		{
-			StatusWidget->AddToViewport(/*ZOrder=*/0);
-			StatusWidget->SetVisibility(ESlateVisibility::Visible);
+			StatusHUD->AddToViewport(0);
+			StatusHUD->SetVisibility(ESlateVisibility::Visible);
+
+			// Health 컴포넌트 찾아서 위젯에 주입
+			UHealthComponent* HC = nullptr;
+			if (HealthComponent)        HC = HealthComponent;
+			else                        HC = FindComponentByClass<UHealthComponent>();
+
+			if (HC)
+			{
+				StatusHUD->SetHealth(HC);   // ← 여기서 바인딩 + 초기 하트 갱신 끝
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("HealthComponent not found on Character"));
+			}
 		}
 	}
+
 
 
 
@@ -147,6 +173,8 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	// MappingContext�� BeginPlay���� �߰�
 
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	PlayerInputComponent->BindAction("Debug_Hurt", IE_Pressed, this, &AGEB_ProjectCharacter::DebugHurt);
+
 
 	// Enhanced Input �׼� ���ε�(�� ���� ����)
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -248,6 +276,11 @@ void AGEB_ProjectCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AGEB_ProjectCharacter::Shoot(const FInputActionValue& /*Value*/)
 {
+	// 11.24 권신혁 추가. 그래플링 중이면 공격 불가
+	bool InGrappling = GetValueFromBP();
+	if (InGrappling) return;
+
+
 	UE_LOG(LogTemp, Warning, TEXT("Shoot!"));
 	if (WeaponComp) { WeaponComp->Fire(); }
 }
@@ -257,3 +290,31 @@ void AGEB_ProjectCharacter::Reload(const FInputActionValue& /*Value*/)
 	UE_LOG(LogTemp, Warning, TEXT("Reload!"));
 	if (WeaponComp) { WeaponComp->Reload(); }
 }
+
+// 11.24 권신혁 추가. 피격 당하면 호출되는 함수
+void AGEB_ProjectCharacter::OnHit()
+{
+	// 로그 확인
+	UE_LOG(LogTemp, Warning, TEXT("Ouch! I'm hit!"));
+
+	// 몽타주 재생
+	if (HitReactMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			// 피격 애니메이션 재생
+			AnimInstance->Montage_Play(HitReactMontage);
+		}
+
+	}
+}
+void AGEB_ProjectCharacter::DebugHurt()
+{
+	UHealthComponent* HC = HealthComponent ? HealthComponent.Get() : FindComponentByClass<UHealthComponent>();
+	if (HC)
+	{
+		IHealthInterface::Execute_ApplyDamage(HC, 1.f);
+	}
+}
+	
