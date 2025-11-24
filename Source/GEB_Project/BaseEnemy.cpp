@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include <Kismet/GameplayStatics.h>
 #include "ExperienceComponent.h"
+#include "BrainComponent.h"
 
 
 // Sets default values
@@ -66,6 +67,24 @@ void ABaseEnemy::DieProcess() {
 			}
 		}
 	}
+	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
+	if (animInst) {
+		animInst->SetAnimStateDie();
+	}
+
+	AAIController* AICon = Cast<AAIController>(GetController());
+
+	if (AICon)
+	{
+		if (UBrainComponent* Brain = AICon->GetBrainComponent())
+		{
+			Brain->StopLogic("Turret Died");
+		}
+
+		AICon->StopMovement();
+		AICon->SetActorTickEnabled(false);
+	}
+
 }
 
 void ABaseEnemy::DieProcessEnd() {

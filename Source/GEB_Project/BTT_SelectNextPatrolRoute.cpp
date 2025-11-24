@@ -14,7 +14,7 @@ UBTT_SelectNextPatrolRoute::UBTT_SelectNextPatrolRoute() {
 EBTNodeResult::Type UBTT_SelectNextPatrolRoute::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
 	AEnemyAIController* AICon = Cast<AEnemyAIController>(OwnerComp.GetAIOwner());
 
-	if (!AICon && !AICon->Spline) {
+	if (!AICon || !AICon->Spline) {
 		return EBTNodeResult::Failed;
 	}
 
