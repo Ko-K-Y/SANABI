@@ -84,9 +84,13 @@ void UWeaponComponent::Fire()
 	// 플레이어 컨트롤러를 가져오기
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
+	int32 ScreenSizeX;
+	int32 ScreenSizeY;
+	PlayerController->GetViewportSize(ScreenSizeX, ScreenSizeY);
+
 	if (PlayerController && PlayerController->DeprojectScreenPositionToWorld(
 		// 뷰포트 중앙 좌표 (1920x1080에서 960, 540)
-		960.0f, 540.0f, 
+		ScreenSizeX / 2.0f, ScreenSizeY / 2.0f,
 		WorldLocation, 
 		WorldDirection))
 	{
@@ -166,10 +170,41 @@ void UWeaponComponent::Fire()
 				MuzzleTraceResult,
 				MuzzleLocation, // 총구 시작 위치
 				TargetPoint,    // 1단계에서 찾은 최종 목표 지점
-				ECollisionChannel::ECC_Pawn,
+				ECollisionChannel::ECC_Pawn, 
 				Params
 			);
 			
+			/* 11.26 권신혁 추가. 디버그용
+			if (bHitFinal)
+			{
+				AActor* HitActor = MuzzleTraceResult.GetActor();
+
+				// 1. 무엇을 맞췄는지 로그 출력
+				FString HitName = HitActor ? HitActor->GetName() : TEXT("None");
+				UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitName);
+
+				// 2. 자신을 맞췄다면 경고 (노란색 로그)
+				if (HitActor == GetOwner())
+				{
+					UE_LOG(LogTemp, Error, TEXT("!!! SELF HIT DETECTED !!! Check Ignore Params"));
+				}
+
+				// 3. 맞은 위치에 빨간 점 그리기 (5초 유지)
+				// 점이 캐릭터 몸에 찍히는지, 벽 속에 찍히는지 확인
+				DrawDebugPoint(GetWorld(), MuzzleTraceResult.ImpactPoint, 10.0f, FColor::Red, false, 5.0f);
+
+				// 4. 총알 경로 그리기
+				DrawDebugLine(GetWorld(), MuzzleLocation, MuzzleTraceResult.ImpactPoint, FColor::Green, false, 5.0f);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("No Hit (Miss)"));
+				// 허공으로 날아간 경로 그리기
+				DrawDebugLine(GetWorld(), MuzzleLocation, TargetPoint, FColor::Blue, false, 5.0f);
+			}
+			*/
+
+
 			/*DrawDebugLine(
 				GetWorld(),
 				MuzzleLocation,
