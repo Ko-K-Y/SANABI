@@ -8,6 +8,7 @@
 #include <Kismet/GameplayStatics.h>
 #include "ExperienceComponent.h"
 #include "BrainComponent.h"
+#include "TimerManager.h"
 
 
 // Sets default values
@@ -88,5 +89,6 @@ void ABaseEnemy::DieProcess() {
 }
 
 void ABaseEnemy::DieProcessEnd() {
-	Destroy();
+	FTimerHandle Timer;
+	GetWorld()->GetTimerManager().SetTimer(Timer, [this]() {this->Destroy(); }, 1.0f, false);
 }
