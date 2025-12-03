@@ -1,5 +1,6 @@
 #include "WBP_StatusHUD.h"
 #include "HealthComponent.h"
+#include "ExperienceComponent.h"
 #include "Engine/Engine.h"
 
 
@@ -40,4 +41,36 @@ void UWBP_StatusHUD::HandleHealthChanged(int32 Current, int32 Max)
 void UWBP_StatusHUD::HandleDeath()
 {
     // 필요하면 사망 UI 처리
+}
+
+void UWBP_StatusHUD::SetExperience(UExperienceComponent* InExp)
+{
+    if (Exp == InExp) return;
+
+    if (Exp)
+    {
+        Exp->OnExpChanged.RemoveAll(this);
+        Exp->OnLevelUp.RemoveAll(this);
+    }
+
+    Exp = InExp;
+
+    if (Exp)
+    {
+        Exp->OnExpChanged.AddDynamic(this, &UWBP_StatusHUD::HandleExpChanged);
+        Exp->OnLevelUp.AddDynamic(this, &UWBP_StatusHUD::HandleLevelUp);
+
+        HandleExpChanged(Exp->GetCurExp(), Exp->GetExpToLv());
+        HandleLevelUp(Exp->GetLevel());
+    }
+}
+
+void UWBP_StatusHUD::HandleExpChanged(int32 Cur, int32 Max)
+{
+    UpdateExp(Cur, Max);
+}
+
+void UWBP_StatusHUD::HandleLevelUp(int32 Lv)
+{
+    UpdateLevel(Lv);
 }

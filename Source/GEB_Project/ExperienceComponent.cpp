@@ -11,9 +11,7 @@ UExperienceComponent::UExperienceComponent()
 void UExperienceComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	ExpToLevel = CalcExpToNext(Level);
-	// 시작 시 한번 브로드캐스트해서 HUD가 즉시 갱신되게 할 수도 있음
-	OnExpChanged.Broadcast(CurExp, ExpToLevel);
+
 }
 
 void UExperienceComponent::AddEXP(int32 Amount)

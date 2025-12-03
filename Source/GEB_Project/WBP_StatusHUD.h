@@ -3,6 +3,7 @@
 #include "WBP_StatusHUD.generated.h"
 
 class UHealthComponent;
+class UExperienceComponent;
 
 UCLASS()
 class GEB_PROJECT_API UWBP_StatusHUD : public UUserWidget
@@ -18,13 +19,30 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
     void UpdateHearts(int32 Current, int32 Max);
 
+    UFUNCTION(BlueprintCallable, Category = "HUD")
+    void SetExperience(UExperienceComponent* InExp);    
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
+    void UpdateExp(int32 CurExp, int32 ExpToLevel);     
+    UFUNCTION(BlueprintImplementableEvent, Category = "HUD")
+    void UpdateLevel(int32 NewLevel);                    
+
 protected:
     UPROPERTY(BlueprintReadOnly, Category = "HUD")
     TObjectPtr<UHealthComponent> Health = nullptr;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    TObjectPtr<UExperienceComponent> Exp = nullptr;
 
     UFUNCTION()
     void HandleHealthChanged(int32 Current, int32 Max);
 
     UFUNCTION()
     void HandleDeath();
+
+    UFUNCTION()               
+        void HandleExpChanged(int32 Cur, int32 Max);
+
+    UFUNCTION()         
+        void HandleLevelUp(int32 Lv);
 };

@@ -98,6 +98,18 @@ void AGEB_ProjectCharacter::BeginPlay()
 		}
 	}
 
+	// GameInstance�κ��� ����ġ ���� ����
+	if (Experience)
+	{
+		if (UGameInstance* BaseGI = GetGameInstance())
+		{
+			if (UPlayerProgressGameInstance* GI = Cast<UPlayerProgressGameInstance>(BaseGI))
+			{
+				GI->ApplyTo(Experience);
+			}
+		}
+	}
+
 	if (StatusHUDClass)
 	{
 		StatusHUD = CreateWidget<UWBP_StatusHUD>(PC, StatusHUDClass);
@@ -132,17 +144,7 @@ void AGEB_ProjectCharacter::BeginPlay()
 		PC->bShowMouseCursor = false;
 	}
 
-	// GameInstance�κ��� ����ġ ���� ����
-	if (Experience)
-	{
-		if (UGameInstance* BaseGI = GetGameInstance())
-		{
-			if (UPlayerProgressGameInstance* GI = Cast<UPlayerProgressGameInstance>(BaseGI))
-			{
-				GI->ApplyTo(Experience);
-			}
-		}
-	}
+
 
 #if !UE_BUILD_SHIPPING
 	// ���۽� ����� ǥ��
