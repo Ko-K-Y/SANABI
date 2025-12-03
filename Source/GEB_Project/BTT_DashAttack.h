@@ -50,6 +50,12 @@ protected:
 	
 	UPROPERTY()
 	UBehaviorTreeComponent* MyOwnerComp; // 델리게이트 콜백에서 태스크 종료를 위해 컴포넌트 포인터를 저장하는 변수
+
+	UPROPERTY(EditAnywhere, Category = "AI")
+	TSubclassOf<AActor> WarningActorClass;
+
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float WarningDelayTime = 0.4f;
 	
 protected:
 	// Call when Task Start

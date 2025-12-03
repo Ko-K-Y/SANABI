@@ -51,6 +51,18 @@ EBTNodeResult::Type UBTT_DashAttack::ExecuteTask(UBehaviorTreeComponent& OwnerCo
 	FVector LaunchVelocity = DashDirection * DashVelocity;
 
 	// 여기에 공격을 할 거라는 예고로 플레이어의 발 부분에 빨간 원 생성하기 + 생성하고 1초 딜레이 주기
+	if (WarningActorClass)
+	{
+		// 블루프린트의 Break Transform + (0,0,15) 로직 구현
+		FVector SpawnLocation = PlayerLocation;
+		SpawnLocation.Z -= 85.0f; 
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// BP_Warning 생성
+		GetWorld()->SpawnActor<AActor>(WarningActorClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+	}
 	
 	UAnimInstance* AnimInstance = AICharacter->GetMesh() ? AICharacter->GetMesh()->GetAnimInstance() : nullptr;
 	if (AnimInstance && DashMontage)
@@ -68,7 +80,7 @@ EBTNodeResult::Type UBTT_DashAttack::ExecuteTask(UBehaviorTreeComponent& OwnerCo
 		AICharacter->GetWorldTimerManager().SetTimer(
 		DashDelayHandle,
 		FTimerDelegate::CreateUObject(this, &UBTT_DashAttack::DoDash, AICharacter, LaunchVelocity),
-		0.4f,
+		WarningDelayTime,
 		false
 	);
 	}
