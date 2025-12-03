@@ -63,7 +63,6 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 	// 자신의 충돌과 무시할 액터는 무시
 	if (OtherActor && OtherActor != this && OtherComp)
 	{
-
 		UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>();
 		if (HealthComp)
 		{
