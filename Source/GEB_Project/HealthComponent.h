@@ -40,7 +40,8 @@ public:
 
 	// 인터페이스 함수의 구체 구현 (Implementation)
 	virtual int GetCurrentHealth_Implementation() override;
-	virtual int GetMaxHealth_Implementation() override;
+	virtual int GetMaxHealth_Implementation() override; 
+	UFUNCTION(BlueprintCallable)
 	virtual void ApplyDamage_Implementation(float Damage) ;
 
 	// 11.24 권신혁 추가. 데미지 입었다는 것을 저장할 변수

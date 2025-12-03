@@ -118,55 +118,16 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 				IStateInterface::Execute_Invincibility(PlayerState);
 			}
 
-                // 11.24 권신혁 추가. 데미지 입으면 방송
-                if (CurrentHealth > 0) // 죽은게 아니라면
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("APPLY DAMAGE"));
-                    OnDamaged.Broadcast();
-                }
-            }
-
-            // 무적 시작 (인터페이스 이벤트로 호출!)
-            PlayerState->bIsAttacked = true;
-            if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
-            {
-                IStateInterface::Execute_Invincibility(PlayerState);
+                
             }
 
             Broadcast();
             UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
             return;
         }
-    }
 
-        else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
-            UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
-            if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)) {
-                int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
-            }
-            else {
-                UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
-                if (EnemyAnimInst) {
-                    if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
-                    EnemyAnimInst->SetAnimStateHit();
-                }
-                CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-                Broadcast();
-                UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (non-player)"), CurrentHealth, MaxHealth);
-                if (CurrentHealth <= 0) {
-                    CurrentHealth = 0;
-                    EnemyOwner->DieProcess();
-                }
-            }
-        }
-}
 
-		// PlayerStateComponent가 없으면 일반 적용
-		CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-		Broadcast();
-		UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (no PlayerState)"), CurrentHealth, MaxHealth);
-		return;
-	}
+ 
 
 	// ───────── 적/기타 액터 ─────────
     else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
