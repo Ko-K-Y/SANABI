@@ -19,6 +19,12 @@ ABaseEnemy::ABaseEnemy(const FObjectInitializer& ObjectInitializer)
 	AttackComp = CreateDefaultSubobject<UAttackComponent>(TEXT("AttackComponent"));
 	MoveComp = CreateDefaultSubobject<UEnemyMoveComponent>(TEXT("EnemyMoveComponent"));
 	HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	// 컨트롤러가 보는 방향으로 캐릭터 몸통도 회전
+	bUseControllerRotationYaw = true;
+
+	// 이동하는 방향으로 몸통 회전 끄기 -> 충돌 방지
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
 // Called when the game starts or when spawned

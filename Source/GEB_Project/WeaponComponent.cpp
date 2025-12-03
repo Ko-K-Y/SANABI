@@ -10,11 +10,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "GEB_ProjectCharacter.h"
+#include "GameFramework/ProjectileMovementComponent.h" // 무브먼트 설정을 위해 추가
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 }
@@ -26,7 +27,7 @@ void UWeaponComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CurrentAmmo = MaxAmmo;
-	
+
 }
 
 
@@ -53,10 +54,10 @@ void UWeaponComponent::Fire()
 		ShootingTimer,
 		this,
 		&UWeaponComponent::FireCooldown, // 쿨타임 종료 후 호출할 함수
-		ShootingCoolTime,               // 쿨타임 시간 (0.5f)
-		false                           
+		ShootingCoolTime,                // 쿨타임 시간
+		false
 	);
-	
+
 	// 11.24 권신혁 추가. 공격 애니메이션 적용
 	if (FireMontage)
 	{
@@ -75,8 +76,10 @@ void UWeaponComponent::Fire()
 
 	CurrentAmmo--;
 	UE_LOG(LogTemp, Warning, TEXT("CurrentAmmo: %d"), CurrentAmmo);
-	
-	// *** 1. 카메라로부터 라인 트레이스해서 에임에 맞는 적 위치 구하기 ***
+
+	// ====================================================================================
+	// 1단계: 카메라 라인 트레이스 (목표 지점 구하기)
+	// ====================================================================================
 	FHitResult CameraTraceResult;
 	FVector WorldLocation;
 	FVector WorldDirection;
@@ -84,13 +87,17 @@ void UWeaponComponent::Fire()
 	// 플레이어 컨트롤러를 가져오기
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 
+	int32 ScreenSizeX;
+	int32 ScreenSizeY;
+	PlayerController->GetViewportSize(ScreenSizeX, ScreenSizeY);
+
 	if (PlayerController && PlayerController->DeprojectScreenPositionToWorld(
-		// 뷰포트 중앙 좌표 (1920x1080에서 960, 540)
-		960.0f, 540.0f, 
-		WorldLocation, 
+		// 뷰포트 중앙 좌표 계산
+		ScreenSizeX / 2.0f, ScreenSizeY / 2.0f,
+		WorldLocation,
 		WorldDirection))
 	{
-		// 트레이스 끝 지점 계산: 카메라 위치(WorldLocation)에서 
+		// 트레이스 끝 지점 계산: 카메라 위치(WorldLocation)에서 
 		// 카메라 방향(WorldDirection)으로 일정 거리(TraceDistance)만큼 연장
 		const float TraceDistance = 100000.0f; // 매우 긴 거리
 		FVector TraceEnd = WorldLocation + (WorldDirection * TraceDistance);
@@ -98,160 +105,99 @@ void UWeaponComponent::Fire()
 		// 카메라 트레이스 수행 (크로스헤어 조준)
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(GetOwner());
-		
+
 		bool bHit = GetWorld()->LineTraceSingleByChannel(
 			CameraTraceResult,
 			WorldLocation, // 카메라 시작 위치
 			TraceEnd,      // 카메라 트레이스 끝 위치
-			ECollisionChannel::ECC_Pawn, // 또는 적절한 채널
+			ECollisionChannel::ECC_Visibility, // Pawn보다 Visibility가 더 정확함
 			Params
 		);
-		
-		
+
 		if (bHit) TargetPoint = CameraTraceResult.ImpactPoint; // 목표 지점 저장 (카메라 트레이스가 맞춘 지점)
 		else TargetPoint = TraceEnd; // 맞은 곳이 없으면, 카메라 트레이스의 끝 지점을 목표로 설정
+	}
 
-		/*DrawDebugLine(
-			GetWorld(),
-			WorldLocation, // 카메라 시작점
-			TargetPoint,   // 목표 지점
-			FColor::Green,
-			false,
-			3.0f,
-			0,
-			3.0f
-		);*/
-		
-		// *** 2. 저장된 TargetPoint로 부터 Muzzle의 위치까지 line trace
-		FHitResult MuzzleTraceResult;
-		UStaticMeshComponent* MuzzleComponent = nullptr;
-		TArray<UStaticMeshComponent*> StaticMeshComponents;
-		GetOwner()->GetComponents(StaticMeshComponents);
-		
-		for (UStaticMeshComponent* Comp : StaticMeshComponents)
+	// ====================================================================================
+	// 2단계: 총알(Projectile) 소환 및 발사
+	// ====================================================================================
+
+	// Muzzle(총구) 컴포넌트 찾기
+	UStaticMeshComponent* MuzzleComponent = nullptr;
+	TArray<UStaticMeshComponent*> StaticMeshComponents;
+	GetOwner()->GetComponents(StaticMeshComponents);
+
+	for (UStaticMeshComponent* Comp : StaticMeshComponents)
+	{
+		if (Comp && Comp->GetName().Equals(TEXT("Muzzle")))
 		{
-			if (Comp && Comp->GetName().Equals(TEXT("Muzzle")))
-			{
-				MuzzleComponent = Comp;
-				break;
-			}
+			MuzzleComponent = Comp;
+			break;
+		}
+	}
+
+	if (MuzzleComponent)
+	{
+		// 총구 위치 및 회전
+		FVector MuzzleLocation = MuzzleComponent->GetComponentLocation();
+
+		// 1. 머즐 플래시(총구 화염) 스폰 ---
+		if (MuzzleFlashEffect)
+		{
+			UGameplayStatics::SpawnEmitterAttached(
+				MuzzleFlashEffect, // 스폰할 파티클
+				MuzzleComponent,   // 부착할 컴포넌트 (총구)
+				FName("Muzzle_01"),// 부착할 소켓 이름 (없으면 None)
+				FVector(0.f),      // 상대 위치
+				FRotator(0.f, -90.f, 0.f), // 회전 보정
+				EAttachLocation::SnapToTarget, // 위치 타입
+				true               // 자동 파괴
+			);
 		}
 
-		if (MuzzleComponent)
+		// 2. 프로젝틸(총알) 생성 ---
+		if (ProjectileClass)
 		{
-			// Muzzle 위치
-			FVector MuzzleLocation = MuzzleComponent->GetComponentLocation();
-			FRotator RelativeCorrection = FRotator(0.f, -90.f, 0.f);
+			// (1) 발사 방향 계산: [총구]에서 [목표지점]을 바라보는 방향
+			FVector LaunchDirection = (TargetPoint - MuzzleLocation).GetSafeNormal();
+			FRotator LaunchRotation = LaunchDirection.Rotation();
 
-			// 1. 머즐 플래시(총구 화염) 스폰 ---
-			if (MuzzleFlashEffect)
-			{
-				UGameplayStatics::SpawnEmitterAttached(
-					MuzzleFlashEffect, // 스폰할 파티클
-					MuzzleComponent,   // 부착할 컴포넌트 (총구)
-					FName("Muzzle_01"),// 부착할 소켓 이름 (없으면 None)
-					FVector(0.f),      // 상대 위치
-					RelativeCorrection,
-					EAttachLocation::SnapToTarget, // 위치 타입
-					true               // 자동 파괴
-				);
-			}
-    
-			// Muzzle 트레이스
-			Params.AddIgnoredActor(GetOwner()); 
-			// 총이나 총구 이펙트가 트레이스에 걸리는 것을 방지하기 위해 무기 액터도 무시해야하면 생성자에 WeaponActor 추가해서 무시해주기
-			// Params.AddIgnoredActor(WeaponActor); 
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = GetOwner();
+			SpawnParams.Instigator = Cast<APawn>(GetOwner()); // 쏜 사람(나) 등록
 
-			bool bHitFinal = GetWorld()->LineTraceSingleByChannel(
-				MuzzleTraceResult,
-				MuzzleLocation, // 총구 시작 위치
-				TargetPoint,    // 1단계에서 찾은 최종 목표 지점
-				ECollisionChannel::ECC_Pawn,
-				Params
-			);
-			
-			/*DrawDebugLine(
-				GetWorld(),
+			// (2) 액터 소환
+			APlayerProjectile* SpawnedProjectile = GetWorld()->SpawnActor<APlayerProjectile>(
+				ProjectileClass,
 				MuzzleLocation,
-				TargetPoint,
-				FColor::Red,
-				false,      // 한 번만 그립니다.
-				3.0f,       // 3초 동안 표시합니다.
-				0,
-				3.0f        // 라인 두께
-			);*/
-			
-			// <--- 트레이서의 "끝점"을 정의 ---
-			FVector TraceEndLocation;
-			if (bHitFinal)
+				LaunchRotation,
+				SpawnParams
+			);
+
+			// (3) 속성 주입 (속도, 크기, 이펙트 등)
+			if (SpawnedProjectile)
 			{
-				TraceEndLocation = MuzzleTraceResult.ImpactPoint; // 맞았다면 맞은 지점
-			}
-			else
-			{
-				TraceEndLocation = TargetPoint; // 못 맞췄다면 조준한 지점 (허공)
-			}
+				// 크기 설정
+				SpawnedProjectile->SetActorScale3D(ProjectileScale);
 
-			// 2. 빔 트레이서(총알 궤적) 스폰 ---
-			if (TracerEffect)
-			{
-				// 시작점에서 끝점을 향하는 방향 벡터
-				FVector ShotDirection = TraceEndLocation - MuzzleLocation;
-
-				// 해당 방향 벡터를 회전값으로 변환
-				FRotator TracerRotation = ShotDirection.Rotation();
-
-				UParticleSystemComponent* BeamComponent = UGameplayStatics::SpawnEmitterAtLocation(
-					GetWorld(),
-					TracerEffect,
-					MuzzleLocation,
-					TracerRotation,
-					true
-				);
-
-				if (BeamComponent)
+				// 속도 설정 (ProjectileMovement 컴포넌트 접근)
+				if (SpawnedProjectile->ProjectileMovement)
 				{
-					// "Target" 파라미터에 끝점 좌표를 설정
-					BeamComponent->SetVectorParameter(FName("Target"), TraceEndLocation);
-				}
-			}
-
-			// 3. 데미지 적용 및 피격 이펙트 스폰 ---
-			if (bHitFinal)
-			{
-				// <--- 피격(Impact) 이펙트 스폰 ---
-				if (HitImpactEffect)
-				{
-					UGameplayStatics::SpawnEmitterAtLocation(
-						GetWorld(),
-						HitImpactEffect,
-						MuzzleTraceResult.ImpactPoint, // 맞은 위치
-						MuzzleTraceResult.ImpactNormal.Rotation() // 맞은 표면의 법선 방향
-					);
+					SpawnedProjectile->ProjectileMovement->InitialSpeed = ProjectileSpeed;
+					SpawnedProjectile->ProjectileMovement->MaxSpeed = ProjectileSpeed;
 				}
 
-				// <--- 데미지 적용 (기존과 동일) ---
-				AActor* HitActor = MuzzleTraceResult.GetActor();
-				UE_LOG(LogTemp, Warning, TEXT("HIT!"));
-				// MuzzleTraceResult.GetActor()를 통해 맞은 대상에 데미지 적용
-				// UGameplayStatics::ApplyDamage 등을 사용할 수 있습니다.
-				if (HitActor)
-				{
-					// UHealthComponent를 찾고 데미지 적용
-					if (UHealthComponent* HitTarget = HitActor->FindComponentByClass<UHealthComponent>())
-					{
-						IHealthInterface::Execute_ApplyDamage(HitTarget, 1); // 데미지 값
-					}
-					else
-					{
-						UE_LOG(LogTemp, Warning, TEXT("Health Component NOT Found on %s"), *HitActor->GetName());
-					}
-				}
+				// 피격 이펙트 전달 (Projectile 내부에서 Hit 시 사용)
+				SpawnedProjectile->ImpactEffect = HitImpactEffect;
+				SpawnedProjectile->WallImpactEffect = WallImpactEffect;
+
+				// 데미지 값 설정 (필요하다면)
+				SpawnedProjectile->DamageValue = ProjectileDamage;
 			}
-    
-			// **선택 사항: 총구 이펙트와 사운드 재생**
-			// UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlashFX, MuzzleLocation);
-			// UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, MuzzleLocation);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ProjectileClass is NULL! Please assign BP_Bullet in Blueprint."));
 		}
 	}
 }
@@ -264,7 +210,7 @@ void UWeaponComponent::FireCooldown()
 void UWeaponComponent::Reload()
 {
 	if (bIsReloading || (CurrentAmmo == MaxAmmo)) return;
-	
+
 	bIsReloading = true;
 	GetWorld()->GetTimerManager().SetTimer(ReloadTimer, this, &UWeaponComponent::ReloadComplete, ReloadTime, false);
 }
@@ -274,4 +220,3 @@ void UWeaponComponent::ReloadComplete()
 	CurrentAmmo = MaxAmmo;
 	bIsReloading = false;
 }
-
