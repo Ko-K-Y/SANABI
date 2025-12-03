@@ -193,10 +193,10 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		}
 
 		// Look
-		if (LookAction)
+		/*if (LookAction)
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
-		}
+		}*/
 
 		// Shoot / Reload (����)
 		if (ShootAction)
