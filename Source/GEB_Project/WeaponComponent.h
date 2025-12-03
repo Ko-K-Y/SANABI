@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameFramework/Character.h"
+#include "PlayerProjectile.h"
 #include "WeaponComponent.generated.h"
 
 
@@ -39,7 +40,7 @@ private:
 	FTimerHandle ShootingTimer;
 	float ShootingCoolTime = 0.5f;
 
-protected: // <--- 블루프린트에서 보이도록 protected로 변경
+protected:
 
 	// *** 이펙트 (VFX) ***
 	// <--- 머즐 플래시 (총구 화염) ---
@@ -54,10 +55,29 @@ protected: // <--- 블루프린트에서 보이도록 protected로 변경
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 	UParticleSystem* HitImpactEffect;
 
+	UPROPERTY(EditDefaultsOnly, Category = "FX")
+	UParticleSystem* WallImpactEffect;
+
 	// 11.24 권신혁 추가. 공격 애니메이션
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	class UAnimMontage* FireMontage;
+
+	// 12.03 권신혁 추가. 발사체
+	// 발사할 발사체 클래스 (블루프린트에서 BP_MyProjectile 할당)
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	TSubclassOf<class APlayerProjectile> ProjectileClass;
+
+	// 발사체 속도 조절
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileSpeed = 3000.0f;
+
+	// 발사체 크기 조절
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	FVector ProjectileScale = FVector(1.0f, 1.0f, 1.0f);
 	
+	// 발사체 데미지
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileDamage = 10.0f;
 public:
 	// *** Reload ***
 	UFUNCTION()
