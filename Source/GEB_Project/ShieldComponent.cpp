@@ -2,6 +2,8 @@
 
 
 #include "ShieldComponent.h"
+#include "Kismet/GameplayStatics.h"
+
 
 // Sets default values for this component's properties
 UShieldComponent::UShieldComponent()
@@ -60,6 +62,10 @@ int UShieldComponent::ApplyDamageToShield_Implementation(int damage)
 	if (bIsShieldActive)
 	{
 		CurrentShield -= damage;
+		if(ShieldSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ShieldSound, GetOwner()->GetActorLocation());
+		}	
 		if (CurrentShield < 0)
 		{
 			CurrentShield = 0;

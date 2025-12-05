@@ -8,6 +8,7 @@
 #include "AttackComponent.generated.h"
 
 class UCapsuleComponent;
+class USoundBase; // 추가: 사운드 타입 전방 선언
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GEB_PROJECT_API UAttackComponent : public UActorComponent, public IAttack
@@ -28,6 +29,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackSocket")
 	float AttackCapsuleHalfHeight = 40.f;
+
+	// 추가: 공격 시 재생할 사운드 (블루프린트에서 지정)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Sound")
+	USoundBase* AttackSound = nullptr;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
