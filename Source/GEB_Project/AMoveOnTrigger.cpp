@@ -23,36 +23,9 @@ void AAMoveOnTrigger::BeginPlay()
 	Super::BeginPlay();
 
 	StartLocation = GetActorLocation();
-	bForward = true;
 	TargetLocation = StartLocation + MoveOffset;
 
 	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AAMoveOnTrigger::OnTriggerBeginOverlap);
-
-	// 2) 자동 시작
-	if (bAutoStart)
-	{
-		bTriggered = true;   // 트리거 없이 시작하므로 "이미 발동된 것"으로 처리
-		StartMovement();
-	}
-}
-
-void AAMoveOnTrigger::StartMovement()
-{
-	// 3) 순간 이동
-	if (MoveSpeed <= 0.f)
-	{
-		SetActorLocation(TargetLocation);
-		bMoving = false;
-
-		// 순간이동 + 루프면 삭제
-		if (bCanLoof)
-		{
-			Destroy();
-		}
-		return;
-	}
-
-	bMoving = true;
 }
 
 void AAMoveOnTrigger::Tick(float DeltaTime)
@@ -67,38 +40,19 @@ void AAMoveOnTrigger::Tick(float DeltaTime)
 
 	if (Dist <= KINDA_SMALL_NUMBER)
 	{
+		// 정확히 목표 지점으로 정렬하고 이동 종료
 		SetActorLocation(TargetLocation);
-
-		// 1) 왕복(반복)
-		if (bCanLoof)
-		{
-			bForward = !bForward;
-			TargetLocation = bForward ? (StartLocation + MoveOffset) : StartLocation;
-			// bMoving 유지
-		}
-		else
-		{
-			bMoving = false;
-		}
+		bMoving = false;
+		// (추가 기능 없이 종료)
 		return;
 	}
 
+	// 속도 기반 선형 이동 (오버슈팅 방지)
 	const float Step = MoveSpeed * DeltaTime;
 	if (Step >= Dist)
 	{
 		SetActorLocation(TargetLocation);
-
-		// 1) 왕복(반복)
-		if (bCanLoof)
-		{
-			bForward = !bForward;
-			TargetLocation = bForward ? (StartLocation + MoveOffset) : StartLocation;
-			// bMoving 유지
-		}
-		else
-		{
-			bMoving = false;
-		}
+		bMoving = false;
 		return;
 	}
 
@@ -115,9 +69,8 @@ void AAMoveOnTrigger::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp,
 {
 	if (bTriggered) return;        // 한 번만 동작
 	bTriggered = true;
+	bMoving = true;
 
 	// 추가 트리거 방지 (한 번만 동작 보장)
 	Trigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	StartMovement();
 }

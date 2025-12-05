@@ -10,8 +10,6 @@
 #include "BrainComponent.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/ChildActorComponent.h"
-#include "Components/CapsuleComponent.h"
 
 
 // Sets default values
@@ -39,7 +37,7 @@ void ABaseEnemy::BeginPlay()
 		if(GetCharacterMovement())
 			GetCharacterMovement()->MaxWalkSpeed = MoveComp->GetmovementSpeed_Implementation();
 	}
-
+	
 	UCapsuleComponent* MyCapsule = GetCapsuleComponent();
 	UChildActorComponent* ChildActorComp = GetComponentByClass<UChildActorComponent>();
 	if (MyCapsule && ChildActorComp)

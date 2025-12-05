@@ -12,7 +12,6 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
-#include "Kismet/GameplayStatics.h" // 추가: 사운드 재생용
 
 // Sets default values for this component's properties
 UAttackComponent::UAttackComponent()
@@ -112,28 +111,6 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 					{
 						RecentlyHitActors.Empty();
 					}
-#if ENABLE_DRAW_DEBUG
-					else {
-						if (!this) return;
-						UWorld* World = this->GetWorld();
-						if (!World) return;
-
-						for (UCapsuleComponent* Cap : this->SocketCapsules)
-						{
-							if (!IsValid(Cap)) {
-								continue;
-							}
-
-							const FVector Center = Cap->GetComponentLocation();
-							const FQuat Rotation = Cap->GetComponentQuat();
-							const float HalfHeight = Cap->GetScaledCapsuleHalfHeight();
-							const float Radius = Cap->GetScaledCapsuleRadius();
-
-							// 색상, 지속시간, 두께 등은 필요에 따라 조정하세요.
-							DrawDebugCapsule(World, Center, HalfHeight, Radius, Rotation, FColor::Green,/*bPersistentLines=*/false, 0.f, /*DepthPriority=*/0, /*Thickness=*/2.0f);
-						}
-					}
-#endif
 				}
 			}
 		}
@@ -149,19 +126,13 @@ void UAttackComponent::PerformAttack_Implementation() {
 	// �ִϸ��̼� Notify���� �ǰ���ġ ����� OnAttackHit ȣ��
 	//Owner�� ���� ���� ���, �ִϸ��̼�, ����Ʈ ȣ��
 	UAnimInstance* AnimInst = Owner->GetMesh()->GetAnimInstance();
-	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst);
+	UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(AnimInst); 
 	if (EnemyAnimInst) {
 		EnemyAnimInst->SetAnimStateAttack();
 	}
 	RecentlyHitActors.Empty();
 
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack!")); }
-
-	// 사운드가 지정되어 있으면 위치 기반으로 재생
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, Owner->GetActorLocation());
-	}
 
 	isCooldown = true;
 	coolTime = maxAttackCoolTime;

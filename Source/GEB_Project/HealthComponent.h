@@ -7,7 +7,6 @@
 #include "HealthInterface.h"
 #include "HealthComponent.generated.h"
 
-class USoundBase;
 // 11.24 권신혁 추가. 피격 델리게이트 선언
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamagedSignature);
 
@@ -41,8 +40,7 @@ public:
 
 	// 인터페이스 함수의 구체 구현 (Implementation)
 	virtual int GetCurrentHealth_Implementation() override;
-	virtual int GetMaxHealth_Implementation() override; 
-	UFUNCTION(BlueprintCallable)
+	virtual int GetMaxHealth_Implementation() override;
 	virtual void ApplyDamage_Implementation(float Damage) ;
 
 	// 11.24 권신혁 추가. 데미지 입었다는 것을 저장할 변수
@@ -59,12 +57,6 @@ public:
 	// 델리게이트(위젯에서 Bind)
 	UPROPERTY(BlueprintAssignable) FOnHealthChanged OnHealthChanged;
 	UPROPERTY(BlueprintAssignable) FOnDeath         OnDeath;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit|Sound")
-	USoundBase* HitSound = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Die|Sound")
-	USoundBase* DieSound = nullptr;
 
 private:
 	void Broadcast(); // 내부 통지
