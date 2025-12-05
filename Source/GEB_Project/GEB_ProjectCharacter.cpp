@@ -12,6 +12,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetMathLibrary.h" // 내적 계산용
 
 // Input
 #include "EnhancedInputComponent.h"
@@ -38,6 +39,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// �ݸ��� ĸ��
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -167,6 +170,49 @@ void AGEB_ProjectCharacter::BeginPlay()
 #endif
 }
 
+// [추가] Tick 함수 구현
+void AGEB_ProjectCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime); // 부모 클래스의 Tick도 실행 (필수)
+
+	// 1. 무기가 사격 중인지 확인
+	bool bWeaponIsFiring = false;
+	if (WeaponComp)
+	{
+		bWeaponIsFiring = WeaponComp->IsShooting();
+	}
+
+	// 2. 조준 중(줌)이거나 OR 사격 중이라면? -> 무조건 정면(카메라) 보기
+	// (bIsAiming 변수는 블루프린트에서 제어하거나 C++에 있다면 사용)
+	// 만약 bIsAiming이 블루프린트 전용 변수라면 GetValueFromBP() 처럼 가져와야 할 수도 있습니다.
+	// 여기서는 C++ 변수라고 가정합니다. (없으면 선언 필요)
+	bool bIsAimingState = false; // 일단 임시 변수 (C++에 bIsAiming 선언 필요)
+
+	// *중요: bIsAiming이 C++에 없다면 헤더에 bool bIsAiming 추가하고 줌 로직에서 켜고 꺼야 함.
+
+	if (bIsAimingState || bWeaponIsFiring)
+	{
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+	// 3. 둘 다 아니라면 -> 이동 방향 보기 (평소 상태)
+	else
+	{
+		float CurrentSpeed = GetVelocity().Size2D();
+		if (CurrentSpeed > 0.1f)
+		{
+			bUseControllerRotationYaw = false;
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+		}
+		else
+		{
+			// 멈춰있을 때 정면 볼지 말지는 선택 사항
+			bUseControllerRotationYaw = true;
+			GetCharacterMovement()->bOrientRotationToMovement = false;
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -195,10 +241,10 @@ void AGEB_ProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		}
 
 		// Look
-		/*if (LookAction)
+		if (LookAction)
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGEB_ProjectCharacter::Look);
-		}*/
+		}
 
 		// Shoot / Reload (����)
 		if (ShootAction)
@@ -236,13 +282,30 @@ void AGEB_ProjectCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(Right, Axis.X);
 }
 
+// 12.05 권신혁 수정. 에임 감속 기능 추가
 void AGEB_ProjectCharacter::Look(const FInputActionValue& Value)
 {
-	const FVector2D Axis = Value.Get<FVector2D>();
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	// 1. 에임 감속 계수 (기본 1.0)
+	float Friction = 1.0f;
+
+	// 2. 화면 중앙에 적이 있는지 검사 
+	AActor* Target = FindBestTarget(AssistRadius, AssistRange);
+
+	if (Target)
+	{
+		// 적이 있으면 에디터에서 설정한 감속 계수로 Friction 설정
+		Friction = AimDeceleration;
+
+		// (선택) 움직이는 적을 살짝 따라가게 하려면 여기서 AddControllerYawInput을 미세하게 넣어줄 수도 있음 (Camera Magnetism)
+	}
+
 	if (Controller != nullptr)
 	{
-		AddControllerYawInput(Axis.X);
-		AddControllerPitchInput(Axis.Y);
+		// 3. 입력값에 Friction 곱하기
+		AddControllerYawInput(LookAxisVector.X * Friction);
+		AddControllerPitchInput(LookAxisVector.Y * Friction);
 	}
 }
 
@@ -350,4 +413,58 @@ void AGEB_ProjectCharacter::OnDeath()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 
+}
+
+// 12.05 권신혁 추가. 가장 적합한 타겟 찾기 함수
+AActor* AGEB_ProjectCharacter::FindBestTarget(float Radius, float Range)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return nullptr;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	PC->GetPlayerViewPoint(CamLoc, CamRot); // 카메라 위치/회전 가져오기
+
+	FVector Start = CamLoc;
+	FVector End = Start + (CamRot.Vector() * Range);
+
+	// 1. 구체 트레이스 (Sphere Trace)로 범위 내 모든 적 감지
+	TArray<FHitResult> OutHits;
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(Radius);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this); // 나 자신 무시
+
+	// Enemy 채널(또는 Pawn)로 검사
+	bool bHit = GetWorld()->SweepMultiByChannel(
+		OutHits, Start, End, FQuat::Identity, ECollisionChannel::ECC_Pawn, Sphere, Params
+	);
+
+	AActor* BestTarget = nullptr;
+	float BestDotProduct = -1.0f; // -1 ~ 1 (1에 가까울수록 정면)
+
+	// 2. 감지된 적들 중 "화면 정중앙"에 가장 가까운 놈 찾기
+	for (const FHitResult& Hit : OutHits)
+	{
+		AActor* HitActor = Hit.GetActor();
+		// 적이 맞는지 확인 (Tag나 Interface, Class 등으로 체크)
+		if (HitActor && HitActor->ActorHasTag("Enemy"))
+		{
+			// 방향 벡터 계산 (카메라 -> 적)
+			FVector DirToTarget = (HitActor->GetActorLocation() - Start).GetSafeNormal();
+
+			// 내적(Dot Product): 카메라 방향과 적 방향이 얼마나 일치하는지 (-1:뒤, 0:옆, 1:정면)
+			float Dot = FVector::DotProduct(CamRot.Vector(), DirToTarget);
+
+			// 가장 정면에 가까운(내적값이 큰) 적을 선택
+			if (Dot > BestDotProduct)
+			{
+				BestDotProduct = Dot;
+				BestTarget = HitActor;
+			}
+		}
+
+		// DrawDebugSphere(GetWorld(), End, Radius, 12, FColor::Green, false, 0.1f);
+	}
+
+	return BestTarget;
 }
