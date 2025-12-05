@@ -30,8 +30,8 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     const FName TraceKeyName = IsInTraceRangeKey.SelectedKeyName.IsNone() ? FName(TEXT("IsInTraceRange")) : IsInTraceRangeKey.SelectedKeyName;
     const FName CanAttackKeyName = CanAttackKey.SelectedKeyName.IsNone() ? FName(TEXT("CanAttack")) : CanAttackKey.SelectedKeyName;
     const FName Distance_MoveKeyName = Distance_MoveKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_MoveKey.SelectedKeyName;
-    const FName Distance_AttackKeyName = Distance_AttackKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_AttackKey.SelectedKeyName;
-    const FName Distance_PunchKeyName = Distance_PunchKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_PunchKey.SelectedKeyName;
+    const FName Distance_AttackKeyName = Distance_AttackKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Attack")) : Distance_AttackKey.SelectedKeyName;
+    const FName Distance_PunchKeyName = Distance_PunchKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Punch")) : Distance_PunchKey.SelectedKeyName;
 
 
     AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKeyName));
