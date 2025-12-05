@@ -106,19 +106,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 
                 CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApply, 0, MaxHealth);
 
-                // 11.24 권신혁 추가. 데미지 입으면 방송
-                if (CurrentHealth > 0) // 죽은게 아니라면
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("APPLY DAMAGE"));
-                    OnDamaged.Broadcast();
-                }
-            }
-
-            // 무적 시작 (인터페이스 이벤트로 호출!)
-            PlayerState->bIsAttacked = true;
-            if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
-            {
-                IStateInterface::Execute_Invincibility(PlayerState);
+                
             }
 
             Broadcast();

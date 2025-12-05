@@ -88,6 +88,8 @@ void AGEB_ProjectCharacter::BeginPlay()
 	{
 		// HealthComp의 OnDamaged가 울리면 -> 내 OnHit 함수를 실행해라
 		HealthComp->OnDamaged.AddDynamic(this, &AGEB_ProjectCharacter::OnHit);
+		// OnDeath 이벤트에 내 OnDeath 함수 바인딩
+		HealthComp->OnDeath.AddDynamic(this, &AGEB_ProjectCharacter::OnDeath);
 	}
 
 	// ��Ʈ�ѷ�/�����÷��̾�
@@ -317,4 +319,35 @@ void AGEB_ProjectCharacter::DebugHurt()
 		IHealthInterface::Execute_ApplyDamage(HC, 1.f);
 	}
 }
-	
+
+// 12.03 권신혁 추가. 사망 처리 함수
+void AGEB_ProjectCharacter::OnDeath()
+{
+	// 이미 죽은 상태면 또 죽지 않음
+	if (bIsDead) return;
+
+	bIsDead = true;
+	UE_LOG(LogTemp, Warning, TEXT("Player is Dead!"));
+
+	// 1. 키보드/마우스 입력 차단
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+
+	// 2. 사망 애니메이션 재생
+	if (DeathMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			// 몽타주 재생
+			AnimInstance->Montage_Play(DeathMontage);
+		}
+	}
+
+	// 3. 충돌 끄기 (적이 시체를 밟고 지나가도록 / 선택사항)
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+
+}
