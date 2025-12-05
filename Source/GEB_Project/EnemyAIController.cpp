@@ -80,9 +80,9 @@ void AEnemyAIController::OnTargetUpdated(AActor* Target, FAIStimulus Stimulus)
     //if (Stimulus.WasSuccessfullySensed()){
     //    SetFocus(Target); // AI�� Ÿ���� �ٶ󺸰� ��
     //}
-    else{
-        ClearFocus(EAIFocusPriority::Gameplay); // �������� ���ϸ� ��Ŀ�� ����
-    }
+    //else{
+    //    ClearFocus(EAIFocusPriority::Gameplay); // �������� ���ϸ� ��Ŀ�� ����
+    //}
 
     // �÷��̾���� �Ÿ� ���
     float Distance = FVector::Dist(Target->GetActorLocation(), ControlledPawn->GetActorLocation());
