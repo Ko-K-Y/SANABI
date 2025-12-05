@@ -37,5 +37,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Blackboard")
     FBlackboardKeySelector Distance_PunchKey;
 
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector IsDashingKey;
+
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector IsStunnedKey;
     
 };

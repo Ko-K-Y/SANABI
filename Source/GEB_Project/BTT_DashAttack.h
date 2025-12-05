@@ -56,7 +56,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float WarningDelayTime = 0.4f;
-	
+
+	// 마찰력 복구를 위한 변수
+	float OriginalGroundFriction;
+	float OriginalBrakingDeceleration;
 protected:
 	// Call when Task Start
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;

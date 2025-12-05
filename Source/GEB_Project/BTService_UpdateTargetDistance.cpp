@@ -32,8 +32,17 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     const FName Distance_MoveKeyName = Distance_MoveKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Move")) : Distance_MoveKey.SelectedKeyName;
     const FName Distance_AttackKeyName = Distance_AttackKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Attack")) : Distance_AttackKey.SelectedKeyName;
     const FName Distance_PunchKeyName = Distance_PunchKey.SelectedKeyName.IsNone() ? FName(TEXT("Distance_Punch")) : Distance_PunchKey.SelectedKeyName;
+    const FName IsDashingKeyName = IsDashingKey.SelectedKeyName.IsNone() ? FName(TEXT("IsDashing")) : IsDashingKey.SelectedKeyName;
+    const FName IsStunnedKeyName = IsStunnedKey.SelectedKeyName.IsNone() ? FName(TEXT("IsStunned")) : IsStunnedKey.SelectedKeyName;
 
-
+    bool bIsDashing = BlackboardComp->GetValueAsBool(IsDashingKeyName);
+    bool bIsStunned = BlackboardComp->GetValueAsBool(IsStunnedKeyName);
+    if (bIsDashing || bIsStunned)
+    {
+        AICont->ClearFocus(EAIFocusPriority::Gameplay); // 확실하게 포커스 해제
+        return; // 아래의 SetFocus 로직 실행 안 함
+    }
+    
     AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKeyName));
     APawn* ControlledPawn = AICont->GetPawn();
     if (!TargetActor || !ControlledPawn) {
@@ -44,11 +53,14 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
         BlackboardComp->SetValueAsBool(CanAttackKeyName, false);
         BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // 이동 조건
         BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // 공격 선택 조건
-        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // 펀치 공격 조건
+        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 450.f); // 펀치 공격 조건
         return;
     }
     // If Target Exist, Focus on Target.
-    AICont->SetFocus(TargetActor);
+    if (TargetActor)
+    {
+        AICont->SetFocus(TargetActor);
+    }
     
     // ������Ʈ ȹ��
     UAttackComponent* AttackComp = ControlledPawn->FindComponentByClass<UAttackComponent>();
@@ -59,7 +71,7 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
         BlackboardComp->SetValueAsBool(CanAttackKeyName, false);
         BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // 이동 조건
         BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // 공격 선택 조건
-        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // 펀치 공격 조건
+        BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 450.f); // 펀치 공격 조건
         return;
     }
 
@@ -81,5 +93,5 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     BlackboardComp->SetValueAsBool(CanAttackKeyName, bCanAttack);
     BlackboardComp->SetValueAsFloat(Distance_MoveKeyName, 3000.f); // 이동 조건
     BlackboardComp->SetValueAsFloat(Distance_AttackKeyName, 1000.f); // 공격 선택 조건
-    BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // 펀치 공격 조건
+    BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 450.f); // 펀치 공격 조건
 }
