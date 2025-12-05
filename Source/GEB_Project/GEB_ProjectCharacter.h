@@ -41,6 +41,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaTime) override;
 
 	// -------- Input handlers (public: Ű ���ε����� ���� ���? --------
 	void Cheat_AddExp50();   // I key
@@ -138,4 +139,21 @@ protected:
 	// 사망 신호를 받으면 실행될 함수
 	UFUNCTION()
 	void OnDeath();
+
+	// 12.05 권신혁 추가. 에임 보정 기능 추가
+	// 에임 보정 반경 (화면 중앙 기준)
+	UPROPERTY(EditAnywhere, Category = "AimAssist")
+	float AssistRadius = 100.0f;
+
+	// 에임 보정 거리
+	UPROPERTY(EditAnywhere, Category = "AimAssist")
+	float AssistRange = 2000.0f;
+
+	// 가장 적합한 타겟을 찾는 함수
+	AActor* FindBestTarget(float Radius, float Range);
+
+	// 에임 감속 계수 (1.0 = 정배율, 0.5 = 절반 속도, 0.1 = 매우 느림)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AimAssist")
+	float AimDeceleration = 0.5f;
+
 };

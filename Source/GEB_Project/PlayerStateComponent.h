@@ -26,6 +26,7 @@ protected:
 
 	// *** 무적 시간 ***
 public:
+	UPROPERTY(BlueprintReadWrite, Category = "Player State")
 	bool bIsAttacked; // 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
 protected:
 	FTimerHandle InvincibilityTimerHandle;

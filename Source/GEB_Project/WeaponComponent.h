@@ -38,9 +38,12 @@ private:
 	FVector TargetPoint; // 라인 트레이스 맞은 지점
 	bool bIsShooting; //
 	FTimerHandle ShootingTimer;
-	float ShootingCoolTime = 0.5f;
+	
 
 protected:
+	// 12.03 권신혁 추가. 연사 속도 조절
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float ShootingCoolTime = 0.5f;
 
 	// *** 이펙트 (VFX) ***
 	// <--- 머즐 플래시 (총구 화염) ---
@@ -78,12 +81,22 @@ protected:
 	// 발사체 데미지
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float ProjectileDamage = 10.0f;
+
+	// 불렛 마그네티즘 반경 (얼마나 빗나가도 봐줄 것인가)
+	UPROPERTY(EditAnywhere, Category = "AimAssist")
+	float BulletMagnetismRadius = 50.0f;
+
 public:
 	// *** Reload ***
 	UFUNCTION()
 	void Reload();
 	UFUNCTION()
 	void ReloadComplete();
+
+	// 사격 중인지 확인하는 함수
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	bool IsShooting() const { return bIsShooting; }
+
 private:
 	bool bIsReloading = false; // 재장전 중인지 확인
 	FTimerHandle ReloadTimer;
