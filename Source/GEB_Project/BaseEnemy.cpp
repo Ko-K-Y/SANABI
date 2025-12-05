@@ -9,6 +9,8 @@
 #include "ExperienceComponent.h"
 #include "BrainComponent.h"
 #include "TimerManager.h"
+#include "Components/ChildActorComponent.h"
+#include "Components/CapsuleComponent.h"
 
 
 // Sets default values
@@ -36,7 +38,25 @@ void ABaseEnemy::BeginPlay()
 		if(GetCharacterMovement())
 			GetCharacterMovement()->MaxWalkSpeed = MoveComp->GetmovementSpeed_Implementation();
 	}
-	
+
+	UCapsuleComponent* MyCapsule = GetCapsuleComponent();
+	UChildActorComponent* ChildActorComp = GetComponentByClass<UChildActorComponent>();
+	if (MyCapsule && ChildActorComp)
+	{
+		AActor* ChildActor = ChildActorComp->GetChildActor();
+		if (ChildActor)
+		{
+			// 내 캡슐이 자식 액터를 무시하도록 설정
+			MyCapsule->IgnoreActorWhenMoving(ChildActor, true);
+
+			// 자식 액터의 루트 컴포넌트(캡슐이나 메시)도 나(Enemy)를 무시하도록 설정
+			UPrimitiveComponent* ChildRoot = Cast<UPrimitiveComponent>(ChildActor->GetRootComponent());
+			if (ChildRoot)
+			{
+				ChildRoot->IgnoreActorWhenMoving(this, true);
+			}
+		}
+	}
 }
 
 // Called every frame
