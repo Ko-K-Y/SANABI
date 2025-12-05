@@ -53,6 +53,13 @@ public:
 	UFUNCTION()
 	void DebugHurt();
 
+	// 에디터에서 사망 몽타주를 넣을 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	class UAnimMontage* DeathMontage;
+
+	// 중복 사망 방지용 변수
+	bool bIsDead = false;
+
 protected:
 	// -------- Movement / Look --------
 	void Move(const FInputActionValue& Value);
@@ -61,7 +68,7 @@ protected:
 	// -------- Combat --------
 	void Shoot(const FInputActionValue& Value);
 	void Reload(const FInputActionValue& Value);
-	
+
 	// ---------- Components ----------
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
@@ -127,4 +134,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UWBP_StatusHUD> StatusHUD;
+
+	// 사망 신호를 받으면 실행될 함수
+	UFUNCTION()
+	void OnDeath();
 };
