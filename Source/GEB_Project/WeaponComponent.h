@@ -86,6 +86,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AimAssist")
 	float BulletMagnetismRadius = 50.0f;
 
+	// [추가] 총알 사거리 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileRange = 3000.0f;
+
 public:
 	// *** Reload ***
 	UFUNCTION()
