@@ -42,5 +42,8 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Blackboard")
     FBlackboardKeySelector IsStunnedKey;
+
+    UPROPERTY(EditAnywhere, Category = "Blackboard")
+    FBlackboardKeySelector IsPhaseTwoKey;
     
 };

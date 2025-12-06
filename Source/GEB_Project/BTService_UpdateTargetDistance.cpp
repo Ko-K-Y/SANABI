@@ -8,6 +8,7 @@
 #include "Attack.h"
 #include "EnemyMove.h"
 #include "EnemyBaseAnimInstance.h"
+#include "HealthComponent.h"
 
 UBTService_UpdateTargetDistance::UBTService_UpdateTargetDistance()
 {
@@ -45,6 +46,36 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     
     AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKeyName));
     APawn* ControlledPawn = AICont->GetPawn();
+
+    UHealthComponent* HealthComp = ControlledPawn->FindComponentByClass<UHealthComponent>();
+        
+    if (HealthComp)
+    {
+        // '액터'가 아니라 찾은 '컴포넌트'가 인터페이스를 구현했는지 확인
+        if (HealthComp->GetClass()->ImplementsInterface(UHealthInterface::StaticClass()))
+        {
+            float MaxHP = IHealthInterface::Execute_GetMaxHealth(HealthComp);
+            float CurrentHP = IHealthInterface::Execute_GetCurrentHealth(HealthComp);
+
+            if (MaxHP > 0.0f)
+            {
+                float HealthPercent = CurrentHP / MaxHP;
+            
+                // 50% (0.5) 이하인지 확인
+                bool bIsPhaseTwo = HealthPercent <= 0.5f;
+
+                // Blackboard 업데이트
+                const FName PhaseTwoKeyName = IsPhaseTwoKey.SelectedKeyName.IsNone() ? FName(TEXT("IsPhaseTwo")) : IsPhaseTwoKey.SelectedKeyName;
+                BlackboardComp->SetValueAsBool(PhaseTwoKeyName, bIsPhaseTwo);
+            }
+        }
+        else
+        {
+            // 컴포넌트는 있지만 인터페이스 상속을 안 받은 경우
+            UE_LOG(LogTemp, Warning, TEXT("HealthComponent found but Interface NOT implemented!"));
+        }
+    }
+    
     if (!TargetActor || !ControlledPawn) {
         // ����� ������ �÷��� false�� ����
         AICont->ClearFocus(EAIFocusPriority::Gameplay);
