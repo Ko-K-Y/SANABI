@@ -39,6 +39,7 @@ void UWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	// ...
 }
 
+
 void UWeaponComponent::Fire()
 {
 	if (CurrentAmmo <= 0 || bIsShooting) return;
@@ -118,6 +119,43 @@ void UWeaponComponent::Fire()
 		else TargetPoint = TraceEnd; // 맞은 곳이 없으면, 카메라 트레이스의 끝 지점을 목표로 설정
 	}
 
+	// =========================================================
+	// [추가] 1.5단계: 불렛 마그네티즘 (유도 보정)
+	// =========================================================
+	FCollisionShape MagnetSphere = FCollisionShape::MakeSphere(BulletMagnetismRadius);
+	TArray<FHitResult> MagnetHits;
+	FCollisionQueryParams MagnetParams;
+	MagnetParams.AddIgnoredActor(GetOwner());
+
+	// 원래 목표점(TargetPoint) 주변을 훑어봄
+	bool bFoundEnemy = GetWorld()->SweepMultiByChannel(
+		MagnetHits,
+		TargetPoint, TargetPoint, // 제자리 스윕
+		FQuat::Identity,
+		ECollisionChannel::ECC_Pawn,
+		MagnetSphere,
+		MagnetParams
+	);
+
+	if (bFoundEnemy)
+	{
+		for (const FHitResult& MagHit : MagnetHits)
+		{
+			// 적 태그가 있거나 HealthComponent가 있는 경우
+			AActor* HitActor = MagHit.GetActor();
+			if (HitActor && HitActor->ActorHasTag("Enemy"))
+			{
+				// 목표점을 적의 위치(중심)로 강제 변경!
+				// (더 정교하게 하려면 Mesh의 'spine_03'이나 'head' 소켓 위치 사용 추천)
+				TargetPoint = HitActor->GetActorLocation();
+
+				// (디버그: 보정되었다는 표시)
+				//  DrawDebugLine(GetWorld(), MuzzleLocation, TargetPoint, FColor::Red, false, 2.0f);
+				break; // 한 명만 잡으면 끝
+			}
+		}
+	}
+
 	// ====================================================================================
 	// 2단계: 총알(Projectile) 소환 및 발사
 	// ====================================================================================
@@ -193,6 +231,14 @@ void UWeaponComponent::Fire()
 
 				// 데미지 값 설정 (필요하다면)
 				SpawnedProjectile->DamageValue = ProjectileDamage;
+
+				// 사거리에 따른 수명(LifeSpan) 설정
+				// 공식: 시간 = 거리 / 속도
+				if (ProjectileSpeed > 0.0f)
+				{
+					float LifeTime = ProjectileRange / ProjectileSpeed;
+					SpawnedProjectile->SetLifeSpan(LifeTime);
+				}
 			}
 		}
 		else
