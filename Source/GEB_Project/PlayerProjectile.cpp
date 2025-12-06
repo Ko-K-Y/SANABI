@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "HealthInterface.h"
 #include "HealthComponent.h"
+#include "GEB_ProjectCharacter.h"
 
 // Sets default values
 APlayerProjectile::APlayerProjectile()
@@ -35,11 +36,16 @@ APlayerProjectile::APlayerProjectile()
 	// 3. 움직임 설정
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
-	ProjectileMovement->InitialSpeed = 3000.f; // 기본 속도 (나중에 덮어씌워짐)
-	ProjectileMovement->MaxSpeed = 3000.f;
+	ProjectileMovement->InitialSpeed = 10000.f; // 기본 속도 (나중에 덮어씌워짐)
+	ProjectileMovement->MaxSpeed = 10000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true; // 날아가는 방향으로 회전
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f; // 중력 0 (직사)
+	ProjectileMovement->Friction = 0.0f; // 마찰력 0
+
+	// 4. 업데이트 안돼서 느려지는 경우 방지
+	ProjectileMovement->bInterpMovement = true;
+	ProjectileMovement->bSweepCollision = true;
 
 	InitialLifeSpan = 3.0f; // 3초 뒤 삭제
 }
@@ -85,6 +91,22 @@ void APlayerProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 
 			// 데미지 적용
 			IHealthInterface::Execute_ApplyDamage(HealthComp, DamageValue);
+
+			// ==========================================
+			// [추가] 킬 확인 및 마커 표시 로직
+			// ==========================================
+			// 현재 체력을 확인해서 0 이하라면(죽었다면)
+			int32 CurrentHP = IHealthInterface::Execute_GetCurrentHealth(HealthComp);
+
+			if (CurrentHP <= 0)
+			{
+				// 총을 쏜 사람(Instigator)이 내 캐릭터라면 -> 킬 마커 함수 호출
+				if (AGEB_ProjectCharacter* MyPlayer = Cast<AGEB_ProjectCharacter>(GetInstigator()))
+				{
+					MyPlayer->ShowKillMarker(); // 블루프린트 이벤트 호출
+					// UE_LOG(LogTemp, Log, TEXT("Enemy Eliminated!"));
+				}
+			}
 		}
 		else
 		{

@@ -1,4 +1,4 @@
-// LevelTransitionTrigger.cpp
+ï»¿// LevelTransitionTrigger.cpp
 #include "LevelTransitionTrigger.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -34,7 +34,7 @@ void ALevelTransitionTrigger::OnBeginOverlap(
     APawn* Pawn = Cast<APawn>(OtherActor);
     if (!Pawn) return;
 
-    // 1) ÇöÀç °æÇèÄ¡ »óÅÂ ÀúÀå
+    // 1) í˜„ìž¬ ê²½í—˜ì¹˜ ìƒíƒœ ì €ìž¥
     if (UExperienceComponent* XP = Pawn->FindComponentByClass<UExperienceComponent>())
     {
         UPlayerProgressGameInstance* GI =
@@ -45,7 +45,7 @@ void ALevelTransitionTrigger::OnBeginOverlap(
         }
     }
 
-    // 2) ·¹º§ ÀüÈ¯
+    // 2) ë ˆë²¨ ì „í™˜
     if (NextLevelName != NAME_None)
     {
         UGameplayStatics::OpenLevel(this, NextLevelName);
