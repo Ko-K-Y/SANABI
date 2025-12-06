@@ -14,6 +14,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h" // 내적 계산용
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 // Input
 #include "EnhancedInputComponent.h"
@@ -423,7 +424,27 @@ void AGEB_ProjectCharacter::OnDeath()
 	// 3. 충돌 끄기 (적이 시체를 밟고 지나가도록 / 선택사항)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	// 4) [추가] 3초 뒤에 레벨 재시작 함수 호출
+	GetWorld()->GetTimerManager().SetTimer(
+		RestartTimerHandle,
+		this,
+		&AGEB_ProjectCharacter::RestartCurrentLevel,
+		3.0f, // 3초 뒤 재시작 (원하는 시간으로 변경 가능)
+		false
+	);
 
+}
+
+//레벨 재시작 함수 구현
+void AGEB_ProjectCharacter::RestartCurrentLevel()
+{
+	// 현재 레벨의 이름을 가져와서 다시 엽니다.
+	FString CurrentLevelName = GetWorld()->GetMapName();
+
+	// PIE(에디터 플레이) 환경에서는 접두사(UEDPIE_0_)가 붙을 수 있으므로 제거
+	CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+	UGameplayStatics::OpenLevel(this, FName(*CurrentLevelName));
 }
 
 // 12.05 권신혁 추가. 가장 적합한 타겟 찾기 함수
