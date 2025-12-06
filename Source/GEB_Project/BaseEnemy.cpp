@@ -48,6 +48,14 @@ void ABaseEnemy::BeginPlay()
 		{
 			// 내 캡슐이 자식 액터를 무시하도록 설정
 			MyCapsule->IgnoreActorWhenMoving(ChildActor, true);
+			UPrimitiveComponent* LandingZone = Cast<UPrimitiveComponent>(
+				ChildActor->GetDefaultSubobjectByName(TEXT("LandingZone"))
+			);
+			if (LandingZone)
+			{
+				LandingZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				LandingZone->SetCollisionResponseToAllChannels(ECR_Ignore);
+			}
 
 			// 자식 액터의 루트 컴포넌트(캡슐이나 메시)도 나(Enemy)를 무시하도록 설정
 			UPrimitiveComponent* ChildRoot = Cast<UPrimitiveComponent>(ChildActor->GetRootComponent());
@@ -67,6 +75,11 @@ void ABaseEnemy::Tick(float DeltaTime)
 	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
 	if (animInst) {
 		animInst->Speed = GetCharacterMovement()->Velocity.Size2D();
+		if (animInst->State == EAnimState::Hit) {
+			if (GEngine) {
+				GEngine->AddOnScreenDebugMessage(5, 0.3f, FColor::Red, TEXT("Hit State Hit"));
+			}
+		}
 	}
 }
 
@@ -97,6 +110,7 @@ void ABaseEnemy::DieProcess() {
 	auto animInst = Cast<UEnemyBaseAnimInstance>(GetMesh()->GetAnimInstance());
 	if (animInst) {
 		animInst->SetAnimStateDie();
+
 	}
 
 	AAIController* AICon = Cast<AAIController>(GetController());
@@ -111,7 +125,11 @@ void ABaseEnemy::DieProcess() {
 		AICon->StopMovement();
 		AICon->SetActorTickEnabled(false);
 	}
-
+	if (UWorld* World = GetWorld())
+	{
+		FTimerHandle DeathTimerHandle;
+		World->GetTimerManager().SetTimer(DeathTimerHandle, [this]() { this->DieProcessEnd(); }, 0.7f, false);
+	}
 }
 
 void ABaseEnemy::DieProcessEnd() {
