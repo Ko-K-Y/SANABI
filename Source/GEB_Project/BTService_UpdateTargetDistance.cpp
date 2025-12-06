@@ -38,6 +38,7 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
     APawn* ControlledPawn = AICont->GetPawn();
     if (!TargetActor || !ControlledPawn) {
         // ����� ������ �÷��� false�� ����
+        AICont->ClearFocus(EAIFocusPriority::Gameplay);
         BlackboardComp->SetValueAsBool(AttackKeyName, false);
         BlackboardComp->SetValueAsBool(TraceKeyName, false);
         BlackboardComp->SetValueAsBool(CanAttackKeyName, false);
@@ -46,7 +47,9 @@ void UBTService_UpdateTargetDistance::TickNode(UBehaviorTreeComponent& OwnerComp
         BlackboardComp->SetValueAsFloat(Distance_PunchKeyName, 300.f); // 펀치 공격 조건
         return;
     }
-
+    // If Target Exist, Focus on Target.
+    AICont->SetFocus(TargetActor);
+    
     // ������Ʈ ȹ��
     UAttackComponent* AttackComp = ControlledPawn->FindComponentByClass<UAttackComponent>();
     UEnemyMoveComponent* MoveComp = ControlledPawn->FindComponentByClass<UEnemyMoveComponent>();

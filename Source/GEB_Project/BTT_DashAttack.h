@@ -6,18 +6,20 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "Animation/AnimMontage.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "Delegates/Delegate.h"
 #include "BTT_DashAttack.generated.h"
 
-/**
- * 
- */
+
+class UBehaviorTreeComponent;
+
 UCLASS()
 class GEB_PROJECT_API UBTT_DashAttack : public UBTTaskNode
 {
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DashAttack")
 	UAnimMontage* DashMontage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blackboard")
 	FBlackboardKeySelector TargetKey;
@@ -39,32 +41,31 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AttackStat", meta = (AllowPrivateAccess = "true"))
 	float coolTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, CateGory = "DashAttack", meta = (AllowPrivateAccess = "true"))
+	float DashVelocity;
+
+	UPROPERTY(EditAnywhere, Category = "DashAttack", meta = (AllowPrivateAccess = "true"))
+	float MontagePlayRate = 1.0f;
+	
+	UPROPERTY()
+	UBehaviorTreeComponent* MyOwnerComp; // 델리게이트 콜백에서 태스크 종료를 위해 컴포넌트 포인터를 저장하는 변수
 	
 protected:
 	// Call when Task Start
-	EBTNodeResult::Type ExcuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	UFUNCTION()
+	void PlayMontage(ACharacter* TargetCharacter, UAnimMontage* Montage, float PlayRate);
+	FTimerHandle DashDelayHandle;
 
-	// Task가 완료될 때까지 실행되는 틱 함수
-	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
-
-	
-private:
-	FVector StartLocation; // Boss Location
-	FVector TargetLocation; // Player Location
-
-	class AAIController* AIController;
-	class APawn* AIPawn;
-	bool bIsDashing = false; // 대쉬 공격 중인지 확인
-	void PerformDash(float DeltaTime); // 대쉬 공격 로직 구현
-
-
-	// *** Montage Play
-private:
-	bool bMontagePlayed;
-protected:
-	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
+	void DoDash(ACharacter* AICharacter, FVector LaunchVelocity);
 
 public:
 	bool GetisCoolDown();
 	float GetattackRange();
+
+private:
+	FVector SavedLaunchVelocity; // 콜백 함수에서 사용하기 위한 변수
+	UFUNCTION()
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 };

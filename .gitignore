@@ -37,16 +37,16 @@ Content/Turrets
 Content/KiteDemo
 Content/Lighting
 Content/SampleMap
+Content/ParagonMuriel
 
 Content/Map/Map_KKY
 Content/Vefects
 
-Content/Map_LeeYH/CyberpunkIndustries
-Content/Map_LeeYH/Basic_VFX
-Content/Map_LeeYH/SoulCity
-Content/Map_LeeYH/Env_SciFi
-Content/Map_LeeYH/dieselpunk
-Content/Map_LeeYH/GoodSky
+Content/Map_LeeYH
+Content/Sci-Fi_Shots_Pack2_Game_Of_Weapons
+Content/Free_Sounds_Pack
 
 Content/SciFiturretasset
-
+Content/Map_LeeYH
+/Content/__ExternalActors__/Map_LeeYH
+/Content/__ExternalActors__/Map_LeeYH
