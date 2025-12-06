@@ -8,6 +8,7 @@
 #include "EnemyBaseAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 // 필요 없다면 아래 둘은 지워도 OK
 #include "BaseEnemy.h"
 #include "StateInterface.h"
@@ -125,6 +126,18 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (EnemyAnimInst) {
                 if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
                 EnemyAnimInst->SetAnimStateHit();
+                if (UWorld* World = GetWorld())
+                {
+                    TWeakObjectPtr<UEnemyBaseAnimInstance> WeakAnimInst(EnemyAnimInst);
+                    FTimerHandle TimerHandle;
+                    World->GetTimerManager().SetTimer(TimerHandle, [WeakAnimInst]() mutable
+                        {
+                            if (UEnemyBaseAnimInstance* Inst = WeakAnimInst.Get())
+                            {
+                                Inst->HitEndForce();
+                            }
+                        }, 0.3f, false);
+                }
                 if (HitSound) { UGameplayStatics::PlaySoundAtLocation(this, HitSound, Owner->GetActorLocation());}
             }
             CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);

@@ -14,10 +14,9 @@ void UEnemyBaseAnimInstance::OnStateAnimationEnds()
 		ABaseEnemy* enemy = Cast<ABaseEnemy>(TryGetPawnOwner());
 		if (State == EAnimState::Hit) {
 			if (IHealthInterface::Execute_GetCurrentHealth(enemy->GetHealthComponent()) > 0.0f) {
+				if(GEngine)
+					GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Enemy Hit Animation Ended - Returning to Locomotion"));
 				State = EAnimState::Locomotion;
-			}
-			else {
-				enemy->DieProcess();
 			}
 		}
 		else if (State == EAnimState::Die) {
@@ -46,4 +45,21 @@ void UEnemyBaseAnimInstance::SetAnimStateHit()
 void UEnemyBaseAnimInstance::SetAnimStateDie()
 {
 	State = EAnimState::Die;
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Enemy Die Animation Started"));
+}
+
+void UEnemyBaseAnimInstance::HitEndForce()
+{
+	if (State == EAnimState::Hit) {
+		State = EAnimState::Locomotion;
+	}
+}
+
+void UEnemyBaseAnimInstance::DieEndForce()
+{
+	if (State == EAnimState::Die) {
+		ABaseEnemy* enemy = Cast<ABaseEnemy>(TryGetPawnOwner());
+		enemy->DieProcessEnd();
+	}
 }
