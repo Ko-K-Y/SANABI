@@ -63,7 +63,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
     AActor* Owner = GetOwner();
     const int32 IntDamage = FMath::Max(1, FMath::FloorToInt(Damage)); // 최소 1
 
-    // ───────── 플레이어일 때: 무적/쉴드 처리 ─────────
+    // ───────── 1. 플레이어(Player)일 때 ─────────
     if (Owner && Owner->IsA(AGEB_ProjectCharacter::StaticClass()))
     {
         if (UPlayerStateComponent* PlayerState = Owner->FindComponentByClass<UPlayerStateComponent>())
@@ -88,19 +88,15 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
                     // 쉴드가 전부 흡수
                     if (RemainingDamage <= 0)
                     {
-                        // 무적 시작 (인터페이스 이벤트는 반드시 Execute_ 로!)
                         PlayerState->bIsAttacked = true;
                         if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
                         {
                             IStateInterface::Execute_Invincibility(PlayerState);
                         }
-
-                        Broadcast(); // UI 갱신(피격 반응 등)
+                        Broadcast();
                         UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (shield absorbed)"), CurrentHealth, MaxHealth);
                         return;
                     }
-
-                    // 일부만 흡수 → 남은 데미지 체력에 적용
                     DamageToApply = RemainingDamage;
                 }
             }
@@ -108,11 +104,17 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             // 체력 감소
             if (bApplyToHP)
             {
-                UE_LOG(LogTemp, Warning, TEXT("APPLY DAMAGE1111"));
+                UE_LOG(LogTemp, Warning, TEXT("APPLY DAMAGE (Player)"));
 
                 CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApply, 0, MaxHealth);
 
-                // 무적 시작 (인터페이스 이벤트로 호출!)
+                // 11.24 권신혁 추가. 데미지 입으면 방송
+                if (CurrentHealth > 0)
+                {
+                    OnDamaged.Broadcast();
+                }
+
+                // 무적 시작
                 PlayerState->bIsAttacked = true;
                 if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
                 {
@@ -120,34 +122,45 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
                 }
             }
         }
+    }
 
-        else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
-            if (bIsEnemyInvincible) return;
+    // ───────── 2. 적(Enemy)일 때 (플레이어 체크 밖으로 뺌) ─────────
+    else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) 
+    {
+        // 무적(피격 모션 중)이면 무시
+        if (bIsEnemyInvincible) return;
 
-            UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
-            if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)) {
-                int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
+        UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
+        if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)) 
+        {
+            int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
+        }
+        else 
+        {
+            UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
+            if (EnemyAnimInst) 
+            {
+                // 이미 죽거나 맞는 중이면 패스 (안전장치)
+                if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
+                EnemyAnimInst->SetAnimStateHit();
             }
-            else {
-                UEnemyBaseAnimInstance* EnemyAnimInst = Cast<UEnemyBaseAnimInstance>(Owner->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance());
-                if (EnemyAnimInst) {
-                    if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
-                    EnemyAnimInst->SetAnimStateHit();
-                }
-                CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
-                Broadcast();
-                UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (non-player)"), CurrentHealth, MaxHealth);
-                if (CurrentHealth <= 0) {
-                    CurrentHealth = 0;
-                    EnemyOwner->DieProcess();
-                }
-                else
+
+            CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
+            Broadcast();
+            UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (Enemy Damaged)"), CurrentHealth, MaxHealth);
+
+            if (CurrentHealth <= 0) 
+            {
+                CurrentHealth = 0;
+                EnemyOwner->DieProcess();
+            }
+            else
+            {
+                // 무적 타이머 시작
+                bIsEnemyInvincible = true;
+                if (UWorld* World = GetWorld())
                 {
-                    bIsEnemyInvincible = true;
-                    if (UWorld* World = GetWorld())
-                    {
-                        World->GetTimerManager().SetTimer(TimerHandle_EnemyInvincibility, this, &UHealthComponent::ResetEnemyInvincibility, EnemyInvincibilityDuration, false);
-                    }
+                    World->GetTimerManager().SetTimer(TimerHandle_EnemyInvincibility, this, &UHealthComponent::ResetEnemyInvincibility, EnemyInvincibilityDuration, false);
                 }
             }
         }

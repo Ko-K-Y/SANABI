@@ -146,6 +146,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UWBP_StatusHUD> StatusHUD;
 
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UWeaponComponent> WeaponComponent;*/
+	
 	// 사망 신호를 받으면 실행될 함수
 	UFUNCTION()
 	void OnDeath();

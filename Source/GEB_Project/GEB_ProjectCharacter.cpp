@@ -73,6 +73,8 @@ AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 
 	// ����ġ ������Ʈ
 	Experience = CreateDefaultSubobject<UExperienceComponent>(TEXT("Experience"));
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 }
 
 void AGEB_ProjectCharacter::BeginPlay()

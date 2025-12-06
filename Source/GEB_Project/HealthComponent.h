@@ -30,7 +30,6 @@ protected:
 	int32 MaxHealth = 3;          // 초기 3칸
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health")
 	int32 CurrentHealth = 3;
-
 	UPROPERTY(EditAnywhere, Category = "Health")
 	int32 MaxLimit = 5;
 
@@ -39,9 +38,12 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// 인터페이스 함수의 구체 구현 (Implementation)
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	virtual int GetCurrentHealth_Implementation() override;
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	virtual int GetMaxHealth_Implementation() override;
-	virtual void ApplyDamage_Implementation(float Damage) ;
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	virtual void ApplyDamage_Implementation(float Damage);
 
 	// 11.24 권신혁 추가. 데미지 입었다는 것을 저장할 변수
 	UPROPERTY(BlueprintAssignable, Category = "Events")
