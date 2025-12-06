@@ -30,8 +30,4 @@ public:
 	virtual void SetAnimStateAttack();
 	virtual void SetAnimStateHit();
 	virtual void SetAnimStateDie();
-
-	virtual void HitEndForce();
-
-	virtual void DieEndForce();
 };
