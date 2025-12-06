@@ -105,10 +105,11 @@ private:
 	bool bIsReloading = false; // 재장전 중인지 확인
 	FTimerHandle ReloadTimer;
 	float ReloadTime = 1.f;
-	
+public:
 	// Ammo
-	UPROPERTY(EditDefaultsOnly, Category = "Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 	int MaxAmmo = 10;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 	int CurrentAmmo;
 
 };
