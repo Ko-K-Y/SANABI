@@ -27,11 +27,11 @@
 #include "HealthInterface.h"
 #include "WBP_StatusHUD.h"
 
+
 // Gameplay/Project
 #include "WeaponComponent.h"
 #include "ExperienceComponent.h"
 #include "PlayerProgressGameInstance.h"
-#include "HealthComponent.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -74,6 +74,9 @@ AGEB_ProjectCharacter::AGEB_ProjectCharacter()
 
 	// ����ġ ������Ʈ
 	Experience = CreateDefaultSubobject<UExperienceComponent>(TEXT("Experience"));
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 }
 
 void AGEB_ProjectCharacter::BeginPlay()
