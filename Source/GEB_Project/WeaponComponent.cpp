@@ -150,7 +150,7 @@ void UWeaponComponent::Fire()
 				TargetPoint = HitActor->GetActorLocation();
 
 				// (디버그: 보정되었다는 표시)
-				// DrawDebugLine(GetWorld(), MuzzleLocation, TargetPoint, FColor::Red, false, 2.0f);
+				//  DrawDebugLine(GetWorld(), MuzzleLocation, TargetPoint, FColor::Red, false, 2.0f);
 				break; // 한 명만 잡으면 끝
 			}
 		}
@@ -231,6 +231,14 @@ void UWeaponComponent::Fire()
 
 				// 데미지 값 설정 (필요하다면)
 				SpawnedProjectile->DamageValue = ProjectileDamage;
+
+				// 사거리에 따른 수명(LifeSpan) 설정
+				// 공식: 시간 = 거리 / 속도
+				if (ProjectileSpeed > 0.0f)
+				{
+					float LifeTime = ProjectileRange / ProjectileSpeed;
+					SpawnedProjectile->SetLifeSpan(LifeTime);
+				}
 			}
 		}
 		else

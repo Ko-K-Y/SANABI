@@ -1,5 +1,6 @@
 ﻿#include "AMoveOnTrigger.h"
 #include "Components/BoxComponent.h"
+#include "TimerManager.h" // [중요] 타이머 사용을 위해 필수 포함
 
 AAMoveOnTrigger::AAMoveOnTrigger()
 {
@@ -31,7 +32,33 @@ void AAMoveOnTrigger::BeginPlay()
 	// 2) 자동 시작
 	if (bAutoStart)
 	{
-		bTriggered = true;   // 트리거 없이 시작하므로 "이미 발동된 것"으로 처리
+		ExecuteMoveProcess(); // 공통 처리 함수 호출
+	}
+}
+
+// [추가] 이동 시작 프로세스 (딜레이 처리 포함)
+void AAMoveOnTrigger::ExecuteMoveProcess()
+{
+	if (bTriggered) return; // 이미 발동되었으면 무시
+	bTriggered = true;      // 발동 상태로 변경
+
+	// 추가 트리거 방지 (한 번만 동작 보장)
+	Trigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// 지연 시간(StartDelay)이 설정되어 있다면 타이머 사용
+	if (StartDelay > 0.f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			StartDelayTimerHandle,
+			this,
+			&AAMoveOnTrigger::StartMovement,
+			StartDelay,
+			false
+		);
+	}
+	else
+	{
+		// 지연 시간 없으면 즉시 시작
 		StartMovement();
 	}
 }
@@ -44,9 +71,21 @@ void AAMoveOnTrigger::StartMovement()
 		SetActorLocation(TargetLocation);
 		bMoving = false;
 
-		// 순간이동 + 루프면 삭제
+		// 순간이동 + 루프면 삭제 (기존 로직 유지)
 		if (bCanLoof)
 		{
+			TArray<AActor*> AttachedActors;
+			GetAttachedActors(AttachedActors); // 내 하위에 붙은 모든 액터 가져오기
+
+			for (AActor* Child : AttachedActors)
+			{
+				if (Child && !Child->IsPendingKillPending())
+				{
+					Child->Destroy();
+				}
+			}
+
+			// 그 다음 나 자신 삭제
 			Destroy();
 		}
 		return;
@@ -65,7 +104,8 @@ void AAMoveOnTrigger::Tick(float DeltaTime)
 	const FVector ToTarget = TargetLocation - Current;
 	const float Dist = ToTarget.Size();
 
-	if (Dist <= KINDA_SMALL_NUMBER)
+	// 목표 도달 판정 (오차 범위 1.0f 정도로 여유를 둠)
+	if (Dist <= 1.0f)
 	{
 		SetActorLocation(TargetLocation);
 
@@ -113,11 +153,5 @@ void AAMoveOnTrigger::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp,
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (bTriggered) return;        // 한 번만 동작
-	bTriggered = true;
-
-	// 추가 트리거 방지 (한 번만 동작 보장)
-	Trigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	StartMovement();
+	ExecuteMoveProcess(); // 공통 처리 함수 호출
 }

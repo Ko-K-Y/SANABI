@@ -13,6 +13,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h" // 내적 계산용
+#include "DrawDebugHelpers.h"
 
 // Input
 #include "EnhancedInputComponent.h"
@@ -31,6 +32,7 @@
 #include "ExperienceComponent.h"
 #include "PlayerProgressGameInstance.h"
 #include "HealthComponent.h"
+
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -94,6 +96,7 @@ void AGEB_ProjectCharacter::BeginPlay()
 		// OnDeath 이벤트에 내 OnDeath 함수 바인딩
 		HealthComp->OnDeath.AddDynamic(this, &AGEB_ProjectCharacter::OnDeath);
 	}
+
 
 	// ��Ʈ�ѷ�/�����÷��̾�
 	APlayerController* PC = Cast<APlayerController>(GetController());
@@ -168,6 +171,8 @@ void AGEB_ProjectCharacter::BeginPlay()
 				Experience->GetLevel(), Experience->GetCurExp(), Experience->GetExpToLv()));
 	}
 #endif
+
+
 }
 
 // [추가] Tick 함수 구현
@@ -211,6 +216,9 @@ void AGEB_ProjectCharacter::Tick(float DeltaTime)
 			GetCharacterMovement()->bOrientRotationToMovement = false;
 		}
 	}
+
+	// 크로스헤어 타겟 검사
+	CheckCrosshairTarget();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -467,4 +475,51 @@ AActor* AGEB_ProjectCharacter::FindBestTarget(float Radius, float Range)
 	}
 
 	return BestTarget;
+}
+
+void AGEB_ProjectCharacter::CheckCrosshairTarget()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	FVector CamLoc;
+	FRotator CamRot;
+	PC->GetPlayerViewPoint(CamLoc, CamRot);
+
+	FVector Start = CamLoc;
+	FVector End = Start + (CamRot.Vector() * CrosshairCheckRange);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	// 화면 중앙으로 레이저 발사
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECollisionChannel::ECC_Visibility, Params
+	);
+
+
+	bool bCurrentHitEnemy = false;
+
+	if (bHit)
+	{
+		AActor* HitActor = HitResult.GetActor();
+		// 적 태그가 있거나, HealthComponent를 가진 대상인지 확인
+		if (HitActor && (HitActor->ActorHasTag("Enemy") || HitActor->FindComponentByClass<UHealthComponent>()))
+		{
+			bCurrentHitEnemy = true;
+			// 적을 보고 있다면 화면에 메시지 출력
+			// GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Red, TEXT("ENEMY TARGETED!"));
+		}
+	}
+
+	// [중요] 상태가 변했을 때만 이벤트 호출 (성능 최적화)
+	// (예: 허공을 보다가 적을 봤을 때 OR 적을 보다가 허공을 봤을 때)
+	if (bCurrentHitEnemy != bIsTargetingEnemy)
+	{
+		bIsTargetingEnemy = bCurrentHitEnemy;
+
+		// 블루프린트로 신호 보냄! (True면 적, False면 아님)
+		OnCrosshairTargetChanged(bIsTargetingEnemy);
+	}
 }

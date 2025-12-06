@@ -146,7 +146,6 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (CurrentHealth <= 0) {
                 CurrentHealth = 0;
                 EnemyOwner->DieProcess();
-				if (DieSound) { UGameplayStatics::PlaySoundAtLocation(this, DieSound, Owner->GetActorLocation()); }
             }
         }
     }
