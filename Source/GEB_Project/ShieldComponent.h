@@ -7,7 +7,6 @@
 #include "ShieldInterface.h"
 #include "ShieldComponent.generated.h"
 
-class USoundBase;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GEB_PROJECT_API UShieldComponent : public UActorComponent, public IShieldInterface
@@ -40,7 +39,4 @@ public:
 	virtual int GetShield_Implementation();
 	virtual int ApplyDamageToShield_Implementation(int damage);
 	virtual bool IsShieldActive_Implementation();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield|Sound")
-	USoundBase* ShieldSound = nullptr;
 };

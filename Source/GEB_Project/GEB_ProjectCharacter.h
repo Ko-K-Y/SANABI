@@ -175,4 +175,10 @@ protected:
 
 	// 매 프레임 실행될 감지 함수
 	void CheckCrosshairTarget();
+
+	// 레벨 재시작 타이머 핸들
+	FTimerHandle RestartTimerHandle;
+
+	// 레벨 재시작 함수
+	void RestartCurrentLevel();
 };
