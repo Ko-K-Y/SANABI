@@ -92,11 +92,6 @@ void UShooterAttackComponent::PerformAttack_Implementation()
 		EnemyAnimInst->SetAnimStateAttack();
 	}
 
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, Owner->GetActorLocation());
-	}
-
 	// 쿨다운 시작
 	isCooldown = true;
 	coolTime = maxAttackCoolTime;
