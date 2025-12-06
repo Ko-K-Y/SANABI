@@ -47,3 +47,18 @@ void UEnemyBaseAnimInstance::SetAnimStateDie()
 {
 	State = EAnimState::Die;
 }
+
+void UEnemyBaseAnimInstance::HitEndForce()
+{
+	if (State == EAnimState::Hit) {
+		State = EAnimState::Locomotion;
+	}
+}
+
+void UEnemyBaseAnimInstance::DieEndForce()
+{
+	if (State == EAnimState::Die) {
+		ABaseEnemy* enemy = Cast<ABaseEnemy>(TryGetPawnOwner());
+		enemy->DieProcessEnd();
+	}
+}
