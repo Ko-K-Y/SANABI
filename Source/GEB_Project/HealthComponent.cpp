@@ -7,7 +7,7 @@
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "TimerManager.h" 
+#include "TimerManager.h"
 // 필요 없다면 아래 둘은 지워도 OK
 #include "BaseEnemy.h"
 #include "StateInterface.h"
@@ -107,25 +107,8 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 
                 CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApply, 0, MaxHealth);
 
-                // ▼▼▼ [여기! 빠진 부분 다시 추가] ▼▼▼
-                if (CurrentHealth > 0) // 아직 살아있다면
-                {
-                    // "나 맞았어!" 신호 보내기 -> 캐릭터가 OnHit 애니메이션 재생
-                    if (OnDamaged.IsBound())
-                    {
-                        OnDamaged.Broadcast();
-                    }
-                }
+                
             }
-
-            // 무적 시작 (체력이 깎였으니 무적 시간 부여)
-            // (이 부분도 원래 있었는데 빠졌을 수 있습니다. 확인하세요!)
-            PlayerState->bIsAttacked = true;
-            if (PlayerState->GetClass()->ImplementsInterface(UStateInterface::StaticClass()))
-            {
-                IStateInterface::Execute_Invincibility(PlayerState);
-            }
-
 
             Broadcast();
             UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d"), CurrentHealth, MaxHealth);
@@ -142,8 +125,19 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (EnemyAnimInst) {
                 if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
                 EnemyAnimInst->SetAnimStateHit();
+                if (UWorld* World = GetWorld())
+                {
+                    TWeakObjectPtr<UEnemyBaseAnimInstance> WeakAnimInst(EnemyAnimInst);
+                    FTimerHandle TimerHandle;
+                    World->GetTimerManager().SetTimer(TimerHandle, [WeakAnimInst]() mutable
+                        {
+                            if (UEnemyBaseAnimInstance* Inst = WeakAnimInst.Get())
+                            {
+                                Inst->HitEndForce();
+                            }
+                        }, 0.3f, false);
+                }
             }
-
             CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
             Broadcast();
             UE_LOG(LogTemp, Log, TEXT("[HP] %d / %d (non-player)"), CurrentHealth, MaxHealth);
