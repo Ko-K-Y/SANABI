@@ -35,6 +35,11 @@ void UHealthComponent::Broadcast()
 	}
 }
 
+void UHealthComponent::ResetEnemyInvincibility()
+{
+	bIsEnemyInvincible = false;
+}
+
 void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -117,17 +122,12 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
 			{
 				IStateInterface::Execute_Invincibility(PlayerState);
 			}
-
-                // 11.24 권신혁 추가. 데미지 입으면 방송
-                if (CurrentHealth > 0) // 죽은게 아니라면
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("APPLY DAMAGE"));
-                    OnDamaged.Broadcast();
-                }
             }
 		}
 
         else if (ABaseEnemy* EnemyOwner = Cast<ABaseEnemy>(Owner)) {
+        	if (bIsEnemyInvincible) return;
+
             UShieldComponent* ShieldComp = EnemyOwner->FindComponentByClass<UShieldComponent>();
             if (ShieldComp && IShieldInterface::Execute_IsShieldActive(ShieldComp)) {
                 int RemainingShield = IShieldInterface::Execute_ApplyDamageToShield(ShieldComp, Damage);
@@ -145,6 +145,14 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
                     CurrentHealth = 0;
                     EnemyOwner->DieProcess();
                 }
+            	else
+            	{
+            		bIsEnemyInvincible = true;
+            		if (UWorld* World = GetWorld())
+            		{
+            			World->GetTimerManager().SetTimer(TimerHandle_EnemyInvincibility, this, &UHealthComponent::ResetEnemyInvincibility, EnemyInvincibilityDuration, false);
+            		}
+            	}
             }
         }
 }

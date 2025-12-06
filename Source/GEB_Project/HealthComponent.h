@@ -60,4 +60,19 @@ public:
 
 private:
 	void Broadcast(); // 내부 통지
+
+protected:
+	// [Enemy 전용] 무적 상태 플래그
+	bool bIsEnemyInvincible = false;
+
+	// [Enemy 전용] 무적 타이머 핸들
+	FTimerHandle TimerHandle_EnemyInvincibility;
+
+	// [Enemy 전용] 무적 해제 함수
+	UFUNCTION()
+	void ResetEnemyInvincibility();
+
+	// [Enemy 전용] 무적 시간 설정 (기본 0.5초 추천)
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float EnemyInvincibilityDuration = 0.6f;
 };
