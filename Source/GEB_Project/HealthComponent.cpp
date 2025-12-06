@@ -7,6 +7,7 @@
 #include "ShieldComponent.h"
 #include "EnemyBaseAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 // 필요 없다면 아래 둘은 지워도 OK
 #include "BaseEnemy.h"
 #include "StateInterface.h"
@@ -124,6 +125,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (EnemyAnimInst) {
                 if (EnemyAnimInst->State == EAnimState::Hit || EnemyAnimInst->State == EAnimState::Die) { return; }
                 EnemyAnimInst->SetAnimStateHit();
+                if (HitSound) { UGameplayStatics::PlaySoundAtLocation(this, HitSound, Owner->GetActorLocation());}
             }
             CurrentHealth = FMath::Clamp(CurrentHealth - IntDamage, 0, MaxHealth);
             Broadcast();
@@ -131,6 +133,7 @@ void UHealthComponent::ApplyDamage_Implementation(float Damage)
             if (CurrentHealth <= 0) {
                 CurrentHealth = 0;
                 EnemyOwner->DieProcess();
+				if (DieSound) { UGameplayStatics::PlaySoundAtLocation(this, DieSound, Owner->GetActorLocation()); }
             }
         }
     }
