@@ -119,7 +119,9 @@ void ALevelOpenTrigger::LoadLevel()
         {
             if (USpawnPointSubsystem* Sub = USpawnPointSubsystem::Get(this))
             {
-                Sub->SetSpawnPoint(FTransform::Identity);
+                // [수정됨] 입력받은 n값으로 (n, n, n) 벡터 생성
+                FVector NewLocation(SpawnResetValue, SpawnResetValue, SpawnResetValue);
+                Sub->SetSpawnPoint(FTransform(NewLocation));
             }
         }
     }

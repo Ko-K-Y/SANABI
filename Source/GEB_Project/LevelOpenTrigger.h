@@ -55,4 +55,7 @@ public:
 	// 페이드 아웃 시간 (기본값 0.5초)
 	UPROPERTY(EditAnywhere, Category = "Level")
 	float FadeDuration = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Level")
+	float SpawnResetValue = 0.0f;
 };
