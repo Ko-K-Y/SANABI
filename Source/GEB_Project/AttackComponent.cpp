@@ -12,7 +12,6 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
-#include "Kismet/GameplayStatics.h" // 추가: 사운드 재생용
 
 // Sets default values for this component's properties
 UAttackComponent::UAttackComponent()
@@ -156,12 +155,6 @@ void UAttackComponent::PerformAttack_Implementation() {
 	RecentlyHitActors.Empty();
 
 	if (GEngine) { GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack!")); }
-
-	// 사운드가 지정되어 있으면 위치 기반으로 재생
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, Owner->GetActorLocation());
-	}
 
 	isCooldown = true;
 	coolTime = maxAttackCoolTime;
