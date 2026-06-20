@@ -49,4 +49,10 @@ public:
 
 	UFUNCTION()
 	virtual void DieProcessEnd();
+
+	// ▼▼▼ [추가] 블루프린트에서 구현할 이벤트 선언 ▼▼▼
+	/* C++에서는 호출만 하고, 실제 로직(파티클 재생, 사운드 등)은 블루프린트에서 짭니다. */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Event")
+	void OnBossDiedEvent();
+
 };
